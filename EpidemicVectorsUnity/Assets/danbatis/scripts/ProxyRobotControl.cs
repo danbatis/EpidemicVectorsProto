@@ -26,6 +26,7 @@ public class ProxyRobotControl : MonoBehaviour {
 	
 	float dblSpaceTimer;
 	bool doubleSpace;
+	float timeOffset;
 	
 	float vertSpeed;
 	float chargeSpeed;
@@ -41,6 +42,10 @@ public class ProxyRobotControl : MonoBehaviour {
 	CharacterController myControl;
 	Animator myAnim;
 
+	float sideAnim;
+	float forthAnim;
+	public float planarAnimRate = 0.5f;
+
 	enum state {
 		free,
 		beingDamaged,
@@ -50,6 +55,9 @@ public class ProxyRobotControl : MonoBehaviour {
 	state mystate;
 
 	public bool lethal;
+	int groundCounter;
+	public int groundLimit = 10;
+	bool grounded;
 
 	// Use this for initialization
 	void Start () {
@@ -60,7 +68,6 @@ public class ProxyRobotControl : MonoBehaviour {
 		
 		planarMovement = Vector3.zero;
 		mystate = state.free;
-		myAnim.SetBool("takeOff", true);
 	}
 	
 	// Update is called once per frame
@@ -97,51 +104,83 @@ public class ProxyRobotControl : MonoBehaviour {
 		//vertical movement
 		if(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)){
 			vertSpeed = Mathf.Lerp (vertSpeed, maxVertVelUp, vertAcel * Time.deltaTime);
+			myAnim.SetFloat("vertSpeed", vertSpeed/maxVertVelUp);
+			myAnim.SetBool("grounded", false);
 		}
 		else{
-			if(Input.GetKey(KeyCode.Space)){
+			//making sure the oscillation always start upward
+			if(Input.GetKeyDown(KeyCode.Space))
+				timeOffset = Time.time;
+			if(Input.GetKey(KeyCode.Space)){				
 				vertSpeed = Mathf.Lerp (vertSpeed, 0.0f, vertAcel * Time.deltaTime);
-				vertSpeed += oscilSpeed*Mathf.Sin(oscilFreq*Time.time);
+				vertSpeed += oscilSpeed*Mathf.Sin(oscilFreq*(Time.time-timeOffset));
+				myAnim.SetFloat("vertSpeed", 0.0f);
+				grounded = false;
+				myAnim.SetBool("grounded", false);
 			}
 			else{
 				vertSpeed = Mathf.Lerp (vertSpeed, -maxVertVelDown, myGravity * Time.deltaTime);
+				myAnim.SetFloat("vertSpeed", vertSpeed/maxVertVelDown);
 			}
 		}
 		
-		if(myControl.isGrounded){
+		if (myControl.isGrounded){
+			groundCounter = 0;
+			grounded = true;
 			vertSpeed = 0.0f;
+			myAnim.SetBool("grounded", true);
+			//Debug.Log("<color=green>grounded</color>");
+		}
+		else{
+			groundCounter++;
+			if (groundCounter > groundLimit){
+				grounded = false;
+				myAnim.SetBool("grounded", false);
+				//Debug.Log("<color=red>not grounded</color>");
+			}
 		}
 		
 		//sideways movement
 		if(Input.GetKey(KeyCode.D)){
 			sideSpeed = maxVel*myTransform.right;
+			sideAnim = Mathf.Lerp(sideAnim, 1.0f, planarAnimRate*Time.deltaTime);
 		}
 		else{
 			if(Input.GetKey(KeyCode.A)){
 				sideSpeed = -maxVel*myTransform.right;
+				sideAnim = Mathf.Lerp(sideAnim, -1.0f,  planarAnimRate*Time.deltaTime);
+
 			}
 			else{				
-				sideSpeed = Vector3.zero;				
+				sideSpeed = Vector3.zero;
+				sideAnim = Mathf.Lerp(sideAnim, 0.0f,  planarAnimRate*Time.deltaTime);
 			}
-		}		
+		}
+		myAnim.SetFloat("side", sideAnim);
+
 		//forth movement
 		if(Input.GetKey(KeyCode.W)){
 			forthSpeed = maxVel*myTransform.forward;
+			forthAnim = Mathf.Lerp(forthAnim, 1.0f,  planarAnimRate*Time.deltaTime);
 		}
 		else{
 			if(Input.GetKey(KeyCode.S)){
 				forthSpeed = -maxVel*myTransform.forward;
+				forthAnim = Mathf.Lerp(forthAnim, -1.0f,  planarAnimRate*Time.deltaTime);
 			}
 			else{				
-				forthSpeed = Vector3.zero;				
+				forthSpeed = Vector3.zero;
+				forthAnim = Mathf.Lerp(forthAnim, 0.0f,  planarAnimRate*Time.deltaTime);
 			}
 		}
+
 		//power chargem
 		if(Input.GetKey(KeyCode.Mouse1)){
 			chargeSpeed = Mathf.Lerp(chargeSpeed, maxChargeSpeed, chargeAcel*Time.deltaTime);
 			movement = chargeSpeed*camTransform.forward;		
 			vertSpeed = Vector3.Project(movement, Vector3.up).y;
-			planarMovement = Vector3.ProjectOnPlane(movement, Vector3.up);				
+			planarMovement = Vector3.ProjectOnPlane(movement, Vector3.up);
+			forthAnim = Mathf.Lerp(forthAnim, 1.0f,  2*planarAnimRate*Time.deltaTime);
 		}
 		else{//normal move
 			chargeSpeed = 0.0f;
@@ -164,6 +203,7 @@ public class ProxyRobotControl : MonoBehaviour {
 				planarMovement = Vector3.Lerp(planarMovement, thrustVec, inertiaFactor*Time.deltaTime);
 			}
 		}
+		myAnim.SetFloat("forth", forthAnim);
 		movement = (vertSpeed*Vector3.up + planarMovement)*Time.deltaTime;
 		myControl.Move(movement);
 	}
