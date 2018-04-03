@@ -1,6 +1,7 @@
 /murisocaModels/tmp/*
 /murisocaModels/renderData/*
 /sandbox/*
+*.mayaSwatches*
 
 # unity project files
 EpidemicVectorsUnity/[Ll]eapMotion/

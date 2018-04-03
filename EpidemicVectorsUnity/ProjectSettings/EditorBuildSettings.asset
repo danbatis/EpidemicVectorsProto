@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/danbatis/scenes/cave.unity
     guid: 28bf0ebbc7d308e4c8cc24863db16688
-  - enabled: 1
+  - enabled: 0
     path: Assets/danbatis/scenes/rastaDemo.unity
     guid: 4d07974c980ebce42b2605c46dc5bc65
+  - enabled: 1
+    path: Assets/danbatis/scenes/scaledCity.unity
+    guid: d974a2c28bf3c414fa48a70289f2c351
