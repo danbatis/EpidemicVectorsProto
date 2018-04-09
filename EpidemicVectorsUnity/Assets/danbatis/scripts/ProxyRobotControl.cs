@@ -1,9 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class ProxyRobotControl : MonoBehaviour {
-
+public class ProxyRobotControl : Weapon {
+	
 	public float myGravity = 1.0f;
 	public float vertAcel = 5.0f;
 	public float maxVertVelUp = 50f;
@@ -22,17 +23,30 @@ public class ProxyRobotControl : MonoBehaviour {
 	public float chargeAcel = 10.0f;
 	public float maxChargeSpeed = 50.0f;
 
-	public float doubleSpaceTime = 0.4f;
 	public float attackRotSpeed = 15f;
-	
-	float dblSpaceTimer;
-	bool doubleSpace;
+
+	bool stabilize;
+	public bool aimAssist;
+	public float aimAssistRange = 50f;
+	public Transform aimTarget;
+	Mutation targetControl;
+
+	RawImage lockFX1,lockFX2,lockFX3,lockFX4,lockFXg;
+	Vector3 targetScreenPos;
+	Vector3 previousTargetScreenPos;
+	Vector3 tempPosLockFX1, tempPosLockFX2, tempPosLockFX3, tempPosLockFX4;
+
+	float lockOnStartTime;
+	public float lockOnTime = 0.125f;
+	float normLockTime;
+	Transform previusAssistTarget;
+
 	float timeOffset;
-	
+
 	float vertSpeed;
 	float chargeSpeed;
-	Vector3 forthSpeed;
-	Vector3 sideSpeed;
+	float forthSpeed;
+	float sideSpeed;
 	Transform myTransform;
 	Transform camTransform;
 	Vector3 projOnFloor;
@@ -56,18 +70,32 @@ public class ProxyRobotControl : MonoBehaviour {
 	public bool coolingDown;
 	public int lastAttack=1;
 
+	public enum quadrant{
+		center,
+		north,
+		south,
+		east,
+		west,
+		northeast,
+		northwest,
+		southeast,
+		southwest
+	}
+
 	enum state {
 		free,
 		beingDamaged,
+		defending,
 		attacking,
 		grappling
 	}
 	state mystate;
+	state oldState;
 
-	public bool lethal;
 	int groundCounter;
 	public int groundLimit = 10;
 	bool grounded;
+
 
 	// Use this for initialization
 	void Start () {
@@ -75,6 +103,13 @@ public class ProxyRobotControl : MonoBehaviour {
 		myAnim = GetComponent<Animator>();
 		myTransform = transform;
 		camTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+
+		//UI
+		lockFX1 = GameObject.Find("GUI/lockFX1").GetComponent<RawImage>();
+		lockFX2 = GameObject.Find("GUI/lockFX2").GetComponent<RawImage>();
+		lockFX3 = GameObject.Find("GUI/lockFX3").GetComponent<RawImage>();
+		lockFX4 = GameObject.Find("GUI/lockFX4").GetComponent<RawImage>();
+		lockFXg = GameObject.Find("GUI/lockFXg").GetComponent<RawImage>();
 		
 		planarMovement = Vector3.zero;
 		mystate = state.free;
@@ -90,18 +125,27 @@ public class ProxyRobotControl : MonoBehaviour {
 		
 		switch(mystate){
 			case state.free:
+				Listen4AimAssist();
 				VerticalThrust();
 				Thrust();
 				DirectionalThrust();
 				Movement();
 				CheckGround();
 				
+				LockOn();
+				Listen4Shield();
 				Listen4Attack();
 				if(attackLine>0)
 					StartCoroutine(simpleAttack());				
 			break;
+			case state.defending:
+				Listen4Shield();
+
+			break;
 			case state.attacking:
-				VerticalThrust();
+				vertSpeed = 0f;
+				//VerticalThrust();
+				//Listen4Shield();
 				CalculateInertiaMovement();
 				Movement();
 				Listen4Attack();
@@ -109,20 +153,148 @@ public class ProxyRobotControl : MonoBehaviour {
 		}
 	}
 
+	void Listen4AimAssist(){
+		if(Input.GetKeyDown(KeyCode.Mouse1)){
+			lockOnStartTime = Time.time;
+			FindTargetAtQuadrant();
+		}
+		if(Input.GetKey(KeyCode.Mouse1)){
+			aimAssist = true; 	
+		}
+		else{
+			aimAssist = false;
+			previusAssistTarget = null;
+		}
+	}
+
+	/*
+	void OnDrawGizmosSelected(){		
+		Gizmos.color = Color.white;
+		Gizmos.DrawWireSphere(transform.position, aimAssistRange);
+	}
+	*/
+
+	void LockOn(){
+		if(aimAssist){
+			targetScreenPos = Camera.main.WorldToScreenPoint(aimTarget.position);
+			//Debug.Log("Screenwidth: "+Screen.width+" target x: " + screenPos.x + " screenheight: "+Screen.height+" y: " +screenPos.y+ " pixels from the left");
+
+			if(Time.time - lockOnStartTime <= lockOnTime){
+				
+				//locking on target
+				if(previusAssistTarget){
+					previousTargetScreenPos = Camera.main.WorldToScreenPoint(previusAssistTarget.position);
+					//assign gray crossHairs to it while locking on next one
+					lockFXg.enabled = true;
+					lockFXg.rectTransform.position = previousTargetScreenPos;
+				}
+				else{
+					lockFXg.enabled = false;
+				}
+
+				lockFX1.enabled = true;
+				lockFX2.enabled = true;
+				lockFX3.enabled = true;
+				lockFX4.enabled = true;
+
+				//make all four pieces to come to the center
+				normLockTime = 1.0f-(Time.time - lockOnStartTime)/lockOnTime;
+
+				tempPosLockFX1 = targetScreenPos + ((Screen.width/2)*normLockTime*Vector3.right + (Screen.height/2)*normLockTime*Vector3.up);
+				tempPosLockFX2 = targetScreenPos + (-(Screen.width/2)*normLockTime*Vector3.right + (Screen.height/2)*normLockTime*Vector3.up);
+				tempPosLockFX3 = targetScreenPos + (-(Screen.width/2)*normLockTime*Vector3.right - (Screen.height/2)*normLockTime*Vector3.up);
+				tempPosLockFX4 = targetScreenPos + ((Screen.width/2)*normLockTime*Vector3.right - (Screen.height/2)*normLockTime*Vector3.up);
+				lockFX1.rectTransform.position = tempPosLockFX1;
+				lockFX2.rectTransform.position = tempPosLockFX2;
+				lockFX3.rectTransform.position = tempPosLockFX3;
+				lockFX4.rectTransform.position = tempPosLockFX4;
+			}
+			else{
+				previusAssistTarget = aimTarget;
+				//just position crossHairs
+				lockFX1.enabled = true;
+				lockFX2.enabled = true;
+				lockFX3.enabled = true;
+				lockFX4.enabled = true;
+
+				lockFX1.rectTransform.position = targetScreenPos;
+				lockFX2.rectTransform.position = targetScreenPos;
+				lockFX3.rectTransform.position = targetScreenPos;
+				lockFX4.rectTransform.position = targetScreenPos;
+			}
+
+		}
+		else{
+			//turn off all crossHairs
+			lockFX1.enabled = false;
+			lockFX2.enabled = false;
+			lockFX3.enabled = false;
+			lockFX4.enabled = false;
+			lockFXg.enabled = false;
+		}
+	}
+	public void FindTargetAtQuadrant(quadrant direction = quadrant.center){
+
+		GameObject[] nearEnemies = GameObject.FindGameObjectsWithTag("Enemy");
+
+		switch(direction){
+		case quadrant.north:
+			break;
+		case quadrant.south:
+			break;
+		case quadrant.east:
+			break;
+		case quadrant.west:
+			break;
+		case quadrant.northeast:
+			break;
+		case quadrant.northwest:
+			break;
+		case quadrant.southeast:
+			break;
+		case quadrant.southwest:
+			break;
+		case quadrant.center:
+			//when user just presses RMB, but does not move the mouse
+			//Debug.Log("<color=yellow>yeap, just called find in neutral dir</color>");
+			break;
+		}
+
+		targetControl = aimTarget.GetComponent<Mutation>();
+	}
+
+	void Listen4Shield(){
+		if(Input.GetKey(KeyCode.F)){
+			vertSpeed = 0f;
+			if(mystate != state.defending)
+				oldState = mystate;
+
+			myAnim.SetBool("defend", true);
+			mystate = state.defending;
+			ClearAttacks();
+		}
+		if(Input.GetKeyUp(KeyCode.F)){
+			myAnim.SetBool("defend", false);
+			mystate = oldState;
+		}
+	}
 	void Listen4Attack(){
 		if (attackFull == false && coolingDown == false){			
 			if(Input.GetKeyDown(KeyCode.Mouse0)){
-				if (!attackFull) {
-					attackLine++;
-					if(attackLine >= attacksMax){
-						attackFull = true;
-						attackLine = attacksMax;
-					}
+				attackLine++;
+				if(attackLine >= attacksMax){
+					attackFull = true;
+					attackLine = attacksMax;
 				}
 			}
 		}
 	}
 	IEnumerator simpleAttack(){
+		if(lastAttack == attacksMax)
+			knockDownHit = true;
+		else
+			knockDownHit = false;
+		
 		myAnim.SetInteger("attackID", lastAttack);
 		mystate = state.attacking;
 		myAnim.SetBool("attacking", true);
@@ -130,7 +302,7 @@ public class ProxyRobotControl : MonoBehaviour {
 		yield return new WaitForSeconds(0.25f*attackTime);
 		lethal = true;
 		yield return new WaitForSeconds(0.75f*attackTime);
-		lethal = false;
+		//lethal = false;
 
 		//decide if follow a combo or returns to idle
 		attackLine--;
@@ -146,44 +318,66 @@ public class ProxyRobotControl : MonoBehaviour {
 	IEnumerator RestartAttacks(){
 		coolingDown = true;
 		yield return new WaitForSeconds(cooldownTime);
+		mystate = state.free;
+		ClearAttacks();
+	}
+
+	void ClearAttacks(){
+		lethal = false;
+		knockDownHit = false;
 		coolingDown = false;
 		lastAttack = 1;
-		mystate = state.free;
 		attackFull = false;
 		myAnim.SetBool("attacking", false);
+		attackLine = 0;
 	}
 
 	void VerticalThrust(){
 		//vertical movement
-		if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) && grounded){
-			startJumpTime = Time.time;
-			myAnim.SetBool ("grounded", false);
+		if((Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)) ){		
+			if(stabilize)
+				stabilize = false;
+			else 
+				stabilize = true;
+			
+			//making sure the oscillation always start upward
+			timeOffset = Time.time;
+		}
+		if((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) ){	
+			if(grounded){
+				startJumpTime = Time.time;
+				myAnim.SetBool ("grounded", false);
+
+
+			}
 		}			
-		if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) {
+		if(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)){
+			//going up
 			if(!grounded || Time.time - startJumpTime > jumpTime){
 				vertSpeed = Mathf.Lerp (vertSpeed, maxVertVelUp, 0.5f*vertAcel * Time.deltaTime);
 				myAnim.SetFloat ("vertSpeed", vertSpeed / maxVertVelUp);
 			}
-		} else {
-			//making sure the oscillation always start upward
-			if (Input.GetKeyDown (KeyCode.Space))
-				timeOffset = Time.time;
-			if (Input.GetKey (KeyCode.Space)) {				
+		} 
+		else{
+			if(stabilize){
+				//stabilizing
 				vertSpeed = Mathf.Lerp (vertSpeed, 0.0f, vertAcel * Time.deltaTime);
 				vertSpeed += oscilSpeed * Mathf.Sin (oscilFreq * (Time.time - timeOffset));
 				myAnim.SetFloat ("vertSpeed", 0.0f);
 				attacksMax = attacksAir;
 				grounded = false;
-				myAnim.SetBool ("grounded", grounded);
-			} else {
-				vertSpeed = Mathf.Lerp (vertSpeed, -maxVertVelDown, myGravity * Time.deltaTime);
-				myAnim.SetFloat ("vertSpeed", vertSpeed / maxVertVelDown);
+				myAnim.SetBool("grounded", grounded);
+			}
+			else{
+				//falling
+				vertSpeed = Mathf.Lerp(vertSpeed, -maxVertVelDown, myGravity * Time.deltaTime);
+				myAnim.SetFloat("vertSpeed", vertSpeed / maxVertVelDown);
 			}
 		}
 	}
 	void CheckGround(){
 		if(Time.time - startJumpTime > jumpTime){
-			if(myControl.isGrounded) {
+			if(myControl.isGrounded){
 				groundCounter = 0;
 				grounded = true;
 				vertSpeed = 0.0f;
@@ -192,54 +386,65 @@ public class ProxyRobotControl : MonoBehaviour {
 			}
 			else{
 				groundCounter++;
-				if (groundCounter > groundLimit) {
+				if (groundCounter > groundLimit){
 					grounded = false;
 					attacksMax = attacksAir;
 					//Debug.Log("<color=red>not grounded</color>");
 				}
 			}
-			myAnim.SetBool ("grounded", grounded);
+			myAnim.SetBool("grounded", grounded);
 		}
 	}
 
 	void Thrust(){		
 		//sideways movement
-		if (Input.GetKey (KeyCode.D)) {
-			sideSpeed = maxVel * myTransform.right;
+		if(Input.GetKey (KeyCode.D)){
+			sideSpeed = maxVel/2;
 			sideAnim = Mathf.Lerp (sideAnim, 1.0f, planarAnimRate * Time.deltaTime);
-		} else {
-			if (Input.GetKey (KeyCode.A)) {
-				sideSpeed = -maxVel * myTransform.right;
+		} 
+		else{
+			if (Input.GetKey (KeyCode.A)){
+				sideSpeed = -maxVel/2;
 				sideAnim = Mathf.Lerp (sideAnim, -1.0f, planarAnimRate * Time.deltaTime);
 
 			} else {				
-				sideSpeed = Vector3.zero;
+				sideSpeed = 0f;
 				sideAnim = Mathf.Lerp (sideAnim, 0.0f, planarAnimRate * Time.deltaTime);
 			}
 		}
 		myAnim.SetFloat ("side", sideAnim);
 
 		//forth movement
-		if (Input.GetKey (KeyCode.W)) {
-			forthSpeed = maxVel * myTransform.forward;
+		if(Input.GetKey (KeyCode.W)){
+			forthSpeed = maxVel;
 			forthAnim = Mathf.Lerp (forthAnim, 1.0f, planarAnimRate * Time.deltaTime);
-		} else {
-			if (Input.GetKey (KeyCode.S)) {
-				forthSpeed = -maxVel * myTransform.forward;
-				forthAnim = Mathf.Lerp (forthAnim, -1.0f, planarAnimRate * Time.deltaTime);
-			} else {				
-				forthSpeed = Vector3.zero;
-				forthAnim = Mathf.Lerp (forthAnim, 0.0f, planarAnimRate * Time.deltaTime);
+		} 
+		else{
+			if(Input.GetKey (KeyCode.S)){
+				forthSpeed = -maxVel;
+				forthAnim = Mathf.Lerp(forthAnim, -1.0f, planarAnimRate * Time.deltaTime);
+			} 
+			else{				
+				forthSpeed = 0f;
+				forthAnim = Mathf.Lerp(forthAnim, 0.0f, planarAnimRate * Time.deltaTime);
 			}
 		}
 
 	}
 	void DirectionalThrust(){
 		//power chargem
-		if(Input.GetKey(KeyCode.Mouse1)){
+		if(Input.GetKey(KeyCode.E)){
+			myAnim.SetBool("powerCharge", true);
 			PowerThrust();
-		} else{
-			CalculateInertiaMovement();
+		} 
+		else{
+			myAnim.SetBool("powerCharge", false);
+			if(aimAssist){
+				AssistedThrust();
+			}
+			else{
+				CalculateInertiaMovement();
+			}
 		}
 	}
 
@@ -250,11 +455,46 @@ public class ProxyRobotControl : MonoBehaviour {
 		planarMovement = Vector3.ProjectOnPlane (movement, Vector3.up);
 		forthAnim = Mathf.Lerp (forthAnim, 1.0f, 2 * planarAnimRate * Time.deltaTime);	
 	}
+	void AssistedThrust(){
+		//normal move
+		chargeSpeed = 0.0f;
+
+		if(targetControl.preventPlayerAdvance){
+			if(forthSpeed > 0)
+				forthSpeed = 0f;
+			thrustVec = sideSpeed*camTransform.right + forthSpeed * camTransform.forward;
+
+			vertSpeed = Vector3.Project(thrustVec, Vector3.up).y;
+			thrustVec = Vector3.ProjectOnPlane(thrustVec, Vector3.up);
+			planarMovement = thrustVec;
+		}
+		else{
+			//move
+			thrustVec = sideSpeed*camTransform.right + forthSpeed * camTransform.forward;
+
+			//if no input, deacelerate
+			if (thrustVec.magnitude == 0f){
+				//Debug.Log("<color=orange>Deacelerating: "+planarMovement.magnitude.ToString()+"</color>");
+				planarMovement = Vector3.Lerp(planarMovement, Vector3.zero,  inertiaFactor * Time.deltaTime);
+
+				if (planarMovement.magnitude <= imperceptibleSpeed) {
+					//Debug.Log("<color=orange>Deacelerated to zero!</color>");
+					planarMovement = Vector3.zero;
+				}
+				vertSpeed = 0f;
+			} 
+			else{
+				vertSpeed = Vector3.Project(thrustVec, Vector3.up).y;
+				thrustVec = Vector3.ProjectOnPlane(thrustVec, Vector3.up);
+				planarMovement = Vector3.Lerp(planarMovement, thrustVec, frictionAcel * Time.deltaTime);
+			}
+		}
+	}
 	void CalculateInertiaMovement(){
 		//normal move
 		chargeSpeed = 0.0f;
 		//move
-		thrustVec = sideSpeed + forthSpeed;
+		thrustVec = sideSpeed*myTransform.right + forthSpeed*myTransform.forward;
 
 
 		//if no input, deacelerate
@@ -279,11 +519,11 @@ public class ProxyRobotControl : MonoBehaviour {
 	}
 
 	void OnTriggerEnter(Collider other){
-		//if(other.tag!="Player")
-		//	Debug.Log("<color=black>"+gameObject.name + "triger enter with "+other.name+"</color>");
+		if(other.tag != "PlayerWeapon")
+			Debug.Log("<color=blue>"+gameObject.name + " triger enter with "+other.name+"</color>");
 	}
 	void OnCollisionEnter(Collision col){
 		if(col.gameObject.tag!="Player")
-			Debug.Log("<color=black>"+gameObject.name + "collision enter with "+col.gameObject.name+"</color>");
+			Debug.Log("<color=blue>"+gameObject.name + " collision enter with "+col.gameObject.name+"</color>");
 	}
 }

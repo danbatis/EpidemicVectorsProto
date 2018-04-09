@@ -5,7 +5,7 @@ using UnityStandardAssets.CrossPlatformInput;
 
 public class TPCamera : MonoBehaviour {
 	
-	public Transform target;
+	Transform target;
 	public float targetHeight = 3.0f;
 	public float rotateSpeed = 5;	
 	public float XSensitivity=0.5f;
@@ -26,8 +26,7 @@ public class TPCamera : MonoBehaviour {
 	float currCamDistance;
 	float currLateralDisplace;
 	float currCamHeight;
-	
-	
+
 	float blindRot;
 	float xRot;
 	float yRot;
@@ -44,16 +43,23 @@ public class TPCamera : MonoBehaviour {
 	Vector3 visionTarget;
 	Vector3 raycastOrigin;
 	Vector3 raycastDir;
+
+	//aim assist
+	ProxyRobotControl playerControl;
+	public float switchAimTargetMouseMin = 0.2f;
 	
 	void Start() {
-		if (target == null) {
+		if(target == null){
 			GameObject targetGO = GameObject.FindGameObjectWithTag("Player");
-			if(targetGO != null)
+			if(targetGO != null){
 				target = targetGO.transform;
+				playerControl = target.GetComponent<ProxyRobotControl>();
+			}
 		}
 		if (target == null) {
 			Debug.Log("Error! The target was not assigned, ThirdPersonCam script is deactivated!");
 			this.enabled = false;
+			Time.timeScale = 0f;
 		}
 		
 		myTransform = transform;
@@ -71,21 +77,41 @@ public class TPCamera : MonoBehaviour {
 	void Update() {
 		Cursor.lockState = CursorLockMode.Locked;
 		Cursor.visible = false;
-		
+
 		xRot = CrossPlatformInputManager.GetAxis("Mouse X") * XSensitivity;
 		yRot = CrossPlatformInputManager.GetAxis("Mouse Y") * YSensitivity;
 		//Debug.Log ("rotx: "+xRot.ToString()+" roty: "+yRot.ToString());
-		rotx = myTransform.forward * Mathf.Cos(xRot) + myTransform.right * Mathf.Sin(xRot);
-		roty = myTransform.forward * Mathf.Cos(yRot) + myTransform.up * Mathf.Sin(yRot);
-		newForth = rotx + roty;	
-				
-		blindRot = Vector3.Angle(newForth, Vector3.up);
-		//Debug.Log("<color=blue>blindRot: "+blindRot.ToString()+"</color>");
-		if(blindRot > insignificantRotation && blindRot < 180 - insignificantRotation){
-			newForth.Normalize();
-			myTransform.forward = Vector3.Lerp(myTransform.forward, newForth, Time.deltaTime * smoothRot);
+
+		if(playerControl.aimAssist){
+			/*
+			//switch targets if mouse movement is big enough
+			//east
+			if(xRot > switchAimTargetMouseMin)
+			//west
+			if(xRot < -switchAimTargetMouseMin)
+			//north
+			if(yRot > switchAimTargetMouseMin)
+			//south
+			if(yRot < -switchAimTargetMouseMin)				
+
+			playerControl.FindTargetAtQuadrant();
+			*/
+			/*
+			Vector3 pseudoForth = (playerControl.aimTarget.position - myTransform.position).normalized;
+			pseudoForth = Vector3.ProjectOnPlane(pseudoForth, Vector3.up);
+			newForth = (target.position - (currCamHeight/2)*Vector3.up) - (target.position - pseudoForth*currCamDistance);
+			*/
+			newForth = playerControl.aimTarget.position - target.position;
+			ReorientCam(10*smoothRot);
 		}
-		
+		else{			
+			rotx = myTransform.forward * Mathf.Cos(xRot) + myTransform.right * Mathf.Sin(xRot);
+			roty = myTransform.forward * Mathf.Cos(yRot) + myTransform.up * Mathf.Sin(yRot);
+			newForth = rotx + roty;
+
+			ReorientCam(smoothRot);
+		}
+
 		//the lerp here is to give the spring effect in the camera
 		targetVirtual = Vector3.Lerp(targetVirtual, target.position, smoothTrans * Time.deltaTime);
 		
@@ -97,7 +123,8 @@ public class TPCamera : MonoBehaviour {
 		raycastOrigin = target.position + Vector3.up * targetHeight;
 		raycastDir = visionTarget - raycastOrigin;
 		Debug.DrawRay(raycastOrigin, raycastDir, new Color (0.0f, 1.0f, 0.75f));//light blue
-		if(Physics.Raycast(raycastOrigin, raycastDir, out hit, raycastDir.magnitude, ignoreOclusionLayer)){
+		Debug.DrawRay(target.position, 10.0f*myTransform.forward, new Color (1.0f, 0.0f, 0.0f));//red
+		if(Physics.Raycast(raycastOrigin, raycastDir, out hit, raycastDir.magnitude, ignoreOclusionLayer.value)){
 			//Debug.Log("<color=blue>camera ray hiting: "+hit.transform.gameObject.name+"</color>");
 			if(hit.transform.tag != "Player"){
 				//ocluded by something
@@ -124,12 +151,19 @@ public class TPCamera : MonoBehaviour {
 		
 	}
 		
+	void ReorientCam(float reorientRate){
+		blindRot = Vector3.Angle(newForth, Vector3.up);
+		//Debug.Log("<color=blue>blindRot: "+blindRot.ToString()+"</color>");
+		if(blindRot > insignificantRotation && blindRot < 180 - insignificantRotation){
+			newForth.Normalize();
+			myTransform.forward = Vector3.Lerp(myTransform.forward, newForth, Time.deltaTime * reorientRate);
+		}
+	}
 	void GetFar(){
 		currCamDistance = camDistanceFar;
 		currLateralDisplace = camLateralDisplaceFar;
 		currCamHeight = camHeightFar;
 		
 		camPosition = targetVirtual - (myTransform.rotation * targetDir*currCamDistance) + currLateralDisplace*myTransform.right + currCamHeight*myTransform.up;				
-	}
-		
+	}		
 }
