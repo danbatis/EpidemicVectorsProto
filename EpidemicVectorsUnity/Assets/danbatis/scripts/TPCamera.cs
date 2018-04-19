@@ -102,7 +102,7 @@ public class TPCamera : MonoBehaviour {
 			newForth = (target.position - (currCamHeight/2)*Vector3.up) - (target.position - pseudoForth*currCamDistance);
 			*/
 			newForth = playerControl.aimTarget.position - target.position;
-			ReorientCam(10*smoothRot);
+			ReorientCam(playerControl.aimSmooth);
 		}
 		else{			
 			rotx = myTransform.forward * Mathf.Cos(xRot) + myTransform.right * Mathf.Sin(xRot);

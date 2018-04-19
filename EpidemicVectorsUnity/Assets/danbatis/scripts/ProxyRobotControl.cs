@@ -29,6 +29,9 @@ public class ProxyRobotControl : Weapon {
 	public bool aimAssist;
 	public float aimAssistRange = 50f;
 	public Transform aimTarget;
+	public float aimSmooth;
+	public float lockedSmooth = 10.0f;
+	public float lockingSmooth = 5.0f;
 	Mutation targetControl;
 
 	RawImage lockFX1,lockFX2,lockFX3,lockFX4,lockFXg;
@@ -69,6 +72,9 @@ public class ProxyRobotControl : Weapon {
 	public bool attackFull = false;
 	public bool coolingDown;
 	public int lastAttack=1;
+	public float damageTime = 1.0f;
+	public float recoilAcel = 10f;
+	Vector3 damageVector;
 
 	public enum quadrant{
 		center,
@@ -95,7 +101,6 @@ public class ProxyRobotControl : Weapon {
 	int groundCounter;
 	public int groundLimit = 10;
 	bool grounded;
-
 
 	// Use this for initialization
 	void Start () {
@@ -139,6 +144,7 @@ public class ProxyRobotControl : Weapon {
 					StartCoroutine(simpleAttack());				
 			break;
 			case state.defending:
+				LockOn();
 				Listen4Shield();
 
 			break;
@@ -149,8 +155,41 @@ public class ProxyRobotControl : Weapon {
 				CalculateInertiaMovement();
 				Movement();
 				Listen4Attack();
+				LockOn();
+			break;
+			case state.beingDamaged:
+				//move backwards
+				damageVector = Vector3.Lerp(damageVector, Vector3.zero, recoilAcel*Time.deltaTime);
+				myControl.Move(damageVector*Time.deltaTime);
 			break;
 		}
+	}
+
+	public override void Damage(int hurtValue, bool knockDown, Vector3 recoilDir){
+		if(mystate == state.defending){
+			//play defend sound and instantiate FX
+		}
+		else{
+			//call base to subtract life
+			base.Damage(hurtValue,knockDown,recoilDir);
+
+			//move and animate
+			StartCoroutine( DamageRecoil(recoilDir) );
+		}
+	}
+
+	IEnumerator DamageRecoil(Vector3 recoil){
+		//check if simple recoil or knockDown
+
+		mystate = state.beingDamaged;
+		damageVector = recoil;
+		//call damage animation
+		myAnim.SetInteger("damageID",Random.Range(1,3));
+		//prepare recoil vector
+		yield return new WaitForSeconds(damageTime);
+		myAnim.SetInteger("damageID",0);
+		mystate = state.free;
+
 	}
 
 	void Listen4AimAssist(){
@@ -158,10 +197,7 @@ public class ProxyRobotControl : Weapon {
 			lockOnStartTime = Time.time;
 			FindTargetAtQuadrant();
 		}
-		if(Input.GetKey(KeyCode.Mouse1)){
-			aimAssist = true; 	
-		}
-		else{
+		if(!Input.GetKey(KeyCode.Mouse1)){
 			aimAssist = false;
 			previusAssistTarget = null;
 		}
@@ -179,9 +215,9 @@ public class ProxyRobotControl : Weapon {
 			targetScreenPos = Camera.main.WorldToScreenPoint(aimTarget.position);
 			//Debug.Log("Screenwidth: "+Screen.width+" target x: " + screenPos.x + " screenheight: "+Screen.height+" y: " +screenPos.y+ " pixels from the left");
 
-			if(Time.time - lockOnStartTime <= lockOnTime){
-				
+			if(Time.time - lockOnStartTime <= lockOnTime){				
 				//locking on target
+				aimSmooth = lockingSmooth;
 				if(previusAssistTarget){
 					previousTargetScreenPos = Camera.main.WorldToScreenPoint(previusAssistTarget.position);
 					//assign gray crossHairs to it while locking on next one
@@ -210,6 +246,8 @@ public class ProxyRobotControl : Weapon {
 				lockFX4.rectTransform.position = tempPosLockFX4;
 			}
 			else{
+				aimSmooth = lockedSmooth;
+				lockFXg.enabled = false;
 				previusAssistTarget = aimTarget;
 				//just position crossHairs
 				lockFX1.enabled = true;
@@ -237,6 +275,13 @@ public class ProxyRobotControl : Weapon {
 
 		GameObject[] nearEnemies = GameObject.FindGameObjectsWithTag("Enemy");
 
+		float closestDist=0f;
+		float currDist;
+		float screenDist;
+		previusAssistTarget = aimTarget;
+		aimTarget = null;
+		aimAssist = false;
+
 		switch(direction){
 		case quadrant.north:
 			break;
@@ -256,11 +301,38 @@ public class ProxyRobotControl : Weapon {
 			break;
 		case quadrant.center:
 			//when user just presses RMB, but does not move the mouse
+			//find closest enemy
 			//Debug.Log("<color=yellow>yeap, just called find in neutral dir</color>");
+			foreach(GameObject enemy in nearEnemies){
+				currDist = Vector3.Distance(myTransform.position, enemy.transform.position);
+				//check if in range
+				if(currDist <= aimAssistRange){
+					targetScreenPos = Camera.main.WorldToScreenPoint(enemy.transform.position);
+					Vector3 screenCenter = new Vector3(Screen.width/2, Screen.height/2, 0f);
+					screenDist = Vector3.Distance(targetScreenPos, screenCenter);
+					//check if in view
+					if(targetScreenPos.x >= 0 && targetScreenPos.x <= Screen.width && targetScreenPos.y >= 0 && targetScreenPos.y <= Screen.height){
+						//then find the one closest to the center
+						if(closestDist == 0f){
+							closestDist = screenDist;
+							aimTarget = enemy.transform;
+						}
+						else{
+							if(screenDist <= closestDist){
+								closestDist = currDist;
+								aimTarget = enemy.transform;
+							}
+						}
+					}
+				}				
+			}
 			break;
 		}
-
-		targetControl = aimTarget.GetComponent<Mutation>();
+		if(aimTarget){
+			targetControl = aimTarget.GetComponent<Mutation>();
+			aimAssist = true;
+		}
+		else{aimAssist = false;}
 	}
 
 	void Listen4Shield(){
@@ -297,7 +369,6 @@ public class ProxyRobotControl : Weapon {
 		
 		myAnim.SetInteger("attackID", lastAttack);
 		mystate = state.attacking;
-		myAnim.SetBool("attacking", true);
 
 		yield return new WaitForSeconds(0.25f*attackTime);
 		lethal = true;
@@ -328,7 +399,7 @@ public class ProxyRobotControl : Weapon {
 		coolingDown = false;
 		lastAttack = 1;
 		attackFull = false;
-		myAnim.SetBool("attacking", false);
+		myAnim.SetInteger("attackID", 0);
 		attackLine = 0;
 	}
 
@@ -519,8 +590,17 @@ public class ProxyRobotControl : Weapon {
 	}
 
 	void OnTriggerEnter(Collider other){
-		if(other.tag != "PlayerWeapon")
-			Debug.Log("<color=blue>"+gameObject.name + " triger enter with "+other.name+"</color>");
+		/*
+		//collision check done in ThreatWeapon
+		if(other.tag == "EnemyWeapon"){
+			Mutation enemyMutation = other.GetComponentInParent<Mutation>();
+			if(enemyMutation.lethal){
+				Damage( enemyMutation.attackPower );
+			}
+		}
+		*/
+
+		//Debug.Log("<color=blue>"+gameObject.name + " triger enter with "+other.name+"</color>");
 	}
 	void OnCollisionEnter(Collision col){
 		if(col.gameObject.tag!="Player")

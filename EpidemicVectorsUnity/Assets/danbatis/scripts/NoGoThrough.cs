@@ -12,7 +12,7 @@ public class NoGoThrough : MonoBehaviour {
 
 	void OnTriggerEnter(Collider other){
 		if(other.tag == "Player"){
-			Debug.Log ("<color=blue> " + gameObject.name +" trigger by player, preventing his advance if using aimAssist</color>");
+			//Debug.Log ("<color=blue> " + gameObject.name +" trigger by player, preventing his advance if using aimAssist</color>");
 			fatherControl.preventPlayerAdvance = true;
 		}
 	}
