@@ -5,7 +5,6 @@ using UnityEngine;
 public class ThreatWeapon : MonoBehaviour {
 	Mutation fatherThreat;
 	Weapon playerControl;
-	public int threatPower = 10;
 
 	// Use this for initialization
 	void Start () {
@@ -19,10 +18,12 @@ public class ThreatWeapon : MonoBehaviour {
 	}
 
 	void OnTriggerEnter(Collider other){
-		if(other.tag == "Player"){// && fatherThreat.lethal){
+		/*
+		if(other.tag == "Player" && fatherThreat.lethal){
 			//Debug.Log("<color=red>"+other.name+" just enter trigger "+gameObject.name+"</color>");
 			fatherThreat.attackConnected = true;
 			playerControl.Damage(threatPower, fatherThreat.myKnockDownHit, fatherThreat.battleMove*fatherThreat.myTransform.forward);
 		}
+		*/
 	}
 }

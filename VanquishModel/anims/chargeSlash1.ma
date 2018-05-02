@@ -1,6 +1,6 @@
 //Maya ASCII 2016 scene
 //Name: chargeSlash1.ma
-//Last modified: Mon, Mar 12, 2018 10:15:23 AM
+//Last modified: Thu, Apr 19, 2018 12:43:47 PM
 //Codeset: 1252
 requires maya "2016";
 requires "stereoCamera" "10.0";
@@ -12,8 +12,8 @@ fileInfo "version" "2016";
 fileInfo "cutIdentifier" "201603180400-990260";
 fileInfo "osv" "Microsoft Windows 8 Home Premium Edition, 64-bit  (Build 9200)\n";
 fileInfo "license" "student";
-createNode clipLibrary -n "clipLibrary2";
-	rename -uid "1EA4EF87-4AE9-F247-BCD8-6C903C1CF910";
+createNode clipLibrary -n "clipLibrary4";
+	rename -uid "8DB61FA7-434A-1C64-25FE-E09C41E7F028";
 	setAttr -s 116 ".cel[0].cev";
 	setAttr ".cd[0].cm" -type "characterMapping" 197 "leftKneeCtrl.scaleZ" 0 
 		1 "leftKneeCtrl.scaleY" 0 2 "leftKneeCtrl.scaleX" 0 3 "leftKneeCtrl.rotateZ" 
@@ -802,20 +802,20 @@ createNode animCurveTA -n "proxyHero_rootCtrl_rotateZ14";
 	rename -uid "8DBD4789-452B-4934-0983-8CAEEFB61CE4";
 	setAttr ".tan" 18;
 	setAttr ".wgt" no;
-	setAttr -s 3 ".ktv[0:2]"  1 -13.631878816678444 8 -27.131471169948988
-		 12 -27.208051416644441;
+	setAttr -s 4 ".ktv[0:3]"  1 -13.631878816678444 6 -25.344117048842428
+		 8 -30.384374622036624 12 -31.174487854693368;
 createNode animCurveTA -n "proxyHero_rootCtrl_rotateY14";
 	rename -uid "AD7D4251-4B4C-7CFC-2F0B-1580E18DC834";
 	setAttr ".tan" 18;
 	setAttr ".wgt" no;
-	setAttr -s 3 ".ktv[0:2]"  1 -14.855099519656006 8 14.480751386693569
-		 12 16.093936941841143;
+	setAttr -s 4 ".ktv[0:3]"  1 -14.855099519656006 6 -2.2424387271452537
+		 8 2.7058180954963897 12 2.9027043125358545;
 createNode animCurveTA -n "proxyHero_rootCtrl_rotateX14";
 	rename -uid "A36A2143-4F3C-9482-9838-48B7DA562824";
 	setAttr ".tan" 18;
 	setAttr ".wgt" no;
-	setAttr -s 3 ".ktv[0:2]"  1 90.02463067031502 8 87.388170172188481
-		 12 87.367977021674591;
+	setAttr -s 4 ".ktv[0:3]"  1 90.02463067031502 6 67.289293336970573
+		 8 65.979512492657278 12 63.818459928529506;
 createNode animCurveTL -n "proxyHero_rootCtrl_translateZ14";
 	rename -uid "681AE3A1-4719-77A1-CE9F-99B5A4E963D3";
 	setAttr ".tan" 18;
@@ -825,13 +825,13 @@ createNode animCurveTL -n "proxyHero_rootCtrl_translateY14";
 	rename -uid "136A9DDD-41C4-3033-56A9-F59B17DE6E8E";
 	setAttr ".tan" 18;
 	setAttr ".wgt" no;
-	setAttr -s 3 ".ktv[0:2]"  1 -6.0795269224504693 8 -6.0795269224504693
-		 12 -6.0795269224504693;
+	setAttr -s 4 ".ktv[0:3]"  1 -6.0795269224504693 6 -6.0795269224504693
+		 8 -6.0795269224504693 12 -6.0795269224504693;
 createNode animCurveTL -n "proxyHero_rootCtrl_translateX14";
 	rename -uid "EF0A5DDD-4E7C-7648-6BAF-12A024318BA6";
 	setAttr ".tan" 18;
 	setAttr ".wgt" no;
-	setAttr -s 3 ".ktv[0:2]"  1 0 8 0 12 0;
+	setAttr -s 4 ".ktv[0:3]"  1 0 6 0 8 0 12 0;
 createNode animCurveTL -n "proxyHero_translateCtrl_translateZ14";
 	rename -uid "37171A70-4973-4D9D-7980-8295B322694D";
 	setAttr ".tan" 18;
@@ -848,8 +848,8 @@ createNode animCurveTL -n "proxyHero_translateCtrl_translateX14";
 	setAttr ".wgt" no;
 	setAttr -s 2 ".ktv[0:1]"  1 0 8 0;
 select -ne :time1;
-	setAttr ".o" 6;
-	setAttr ".unw" 6;
+	setAttr ".o" 12;
+	setAttr ".unw" 12;
 select -ne :hardwareRenderingGlobals;
 	setAttr ".otfna" -type "stringArray" 22 "NURBS Curves" "NURBS Surfaces" "Polygons" "Subdiv Surface" "Particles" "Particle Instance" "Fluids" "Strokes" "Image Planes" "UI" "Lights" "Cameras" "Locators" "Joints" "IK Handles" "Deformers" "Motion Trails" "Components" "Hair Systems" "Follicles" "Misc. UI" "Ornaments"  ;
 	setAttr ".otfva" -type "Int32Array" 22 0 1 1 1 1 1
@@ -883,234 +883,238 @@ select -ne :hardwareRenderGlobals;
 	setAttr ".btrs" 512;
 select -ne :characterPartition;
 select -ne :ikSystem;
-connectAttr "chargeSlash1Source.cl" "clipLibrary2.sc[0]";
-connectAttr "proxyHero_leftKneeCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[3].cevr"
+select -ne :hyperGraphLayout;
+	setAttr -s 2 ".hyp";
+	setAttr ".hyp[0].isc" yes;
+	setAttr ".hyp[1].isc" yes;
+connectAttr "chargeSlash1Source.cl" "clipLibrary4.sc[0]";
+connectAttr "proxyHero_leftKneeCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[3].cevr"
 		;
-connectAttr "proxyHero_leftKneeCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[4].cevr"
+connectAttr "proxyHero_leftKneeCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[4].cevr"
 		;
-connectAttr "proxyHero_leftKneeCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[5].cevr"
+connectAttr "proxyHero_leftKneeCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[5].cevr"
 		;
-connectAttr "proxyHero_leftKneeCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[6].cevr"
+connectAttr "proxyHero_leftKneeCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[6].cevr"
 		;
-connectAttr "proxyHero_leftKneeCtrl_translateY14.a" "clipLibrary2.cel[0].cev[7].cevr"
+connectAttr "proxyHero_leftKneeCtrl_translateY14.a" "clipLibrary4.cel[0].cev[7].cevr"
 		;
-connectAttr "proxyHero_leftKneeCtrl_translateX14.a" "clipLibrary2.cel[0].cev[8].cevr"
+connectAttr "proxyHero_leftKneeCtrl_translateX14.a" "clipLibrary4.cel[0].cev[8].cevr"
 		;
-connectAttr "proxyHero_leftToefootCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[13].cevr"
+connectAttr "proxyHero_leftToefootCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[13].cevr"
 		;
-connectAttr "proxyHero_leftToefootCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[14].cevr"
+connectAttr "proxyHero_leftToefootCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[14].cevr"
 		;
-connectAttr "proxyHero_leftToefootCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[15].cevr"
+connectAttr "proxyHero_leftToefootCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[15].cevr"
 		;
-connectAttr "proxyHero_leftToefootCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[16].cevr"
+connectAttr "proxyHero_leftToefootCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[16].cevr"
 		;
-connectAttr "proxyHero_leftToefootCtrl_translateY14.a" "clipLibrary2.cel[0].cev[17].cevr"
+connectAttr "proxyHero_leftToefootCtrl_translateY14.a" "clipLibrary4.cel[0].cev[17].cevr"
 		;
-connectAttr "proxyHero_leftToefootCtrl_translateX14.a" "clipLibrary2.cel[0].cev[18].cevr"
+connectAttr "proxyHero_leftToefootCtrl_translateX14.a" "clipLibrary4.cel[0].cev[18].cevr"
 		;
-connectAttr "proxyHero_leftFootCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[23].cevr"
+connectAttr "proxyHero_leftFootCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[23].cevr"
 		;
-connectAttr "proxyHero_leftFootCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[24].cevr"
+connectAttr "proxyHero_leftFootCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[24].cevr"
 		;
-connectAttr "proxyHero_leftFootCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[25].cevr"
+connectAttr "proxyHero_leftFootCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[25].cevr"
 		;
-connectAttr "proxyHero_leftFootCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[26].cevr"
+connectAttr "proxyHero_leftFootCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[26].cevr"
 		;
-connectAttr "proxyHero_leftFootCtrl_translateY14.a" "clipLibrary2.cel[0].cev[27].cevr"
+connectAttr "proxyHero_leftFootCtrl_translateY14.a" "clipLibrary4.cel[0].cev[27].cevr"
 		;
-connectAttr "proxyHero_leftFootCtrl_translateX14.a" "clipLibrary2.cel[0].cev[28].cevr"
+connectAttr "proxyHero_leftFootCtrl_translateX14.a" "clipLibrary4.cel[0].cev[28].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_rotateZ29.a" "clipLibrary2.cel[0].cev[33].cevr"
+connectAttr "proxyHero_rightFootCtrl_rotateZ29.a" "clipLibrary4.cel[0].cev[33].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_rotateY29.a" "clipLibrary2.cel[0].cev[34].cevr"
+connectAttr "proxyHero_rightFootCtrl_rotateY29.a" "clipLibrary4.cel[0].cev[34].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_rotateX29.a" "clipLibrary2.cel[0].cev[35].cevr"
+connectAttr "proxyHero_rightFootCtrl_rotateX29.a" "clipLibrary4.cel[0].cev[35].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_translateZ29.a" "clipLibrary2.cel[0].cev[36].cevr"
+connectAttr "proxyHero_rightFootCtrl_translateZ29.a" "clipLibrary4.cel[0].cev[36].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_translateY29.a" "clipLibrary2.cel[0].cev[37].cevr"
+connectAttr "proxyHero_rightFootCtrl_translateY29.a" "clipLibrary4.cel[0].cev[37].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_translateX29.a" "clipLibrary2.cel[0].cev[38].cevr"
+connectAttr "proxyHero_rightFootCtrl_translateX29.a" "clipLibrary4.cel[0].cev[38].cevr"
 		;
-connectAttr "proxyHero_rightToefootCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[43].cevr"
+connectAttr "proxyHero_rightToefootCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[43].cevr"
 		;
-connectAttr "proxyHero_rightToefootCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[44].cevr"
+connectAttr "proxyHero_rightToefootCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[44].cevr"
 		;
-connectAttr "proxyHero_rightToefootCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[45].cevr"
+connectAttr "proxyHero_rightToefootCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[45].cevr"
 		;
-connectAttr "proxyHero_rightToefootCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[46].cevr"
+connectAttr "proxyHero_rightToefootCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[46].cevr"
 		;
-connectAttr "proxyHero_rightToefootCtrl_translateY14.a" "clipLibrary2.cel[0].cev[47].cevr"
+connectAttr "proxyHero_rightToefootCtrl_translateY14.a" "clipLibrary4.cel[0].cev[47].cevr"
 		;
-connectAttr "proxyHero_rightToefootCtrl_translateX14.a" "clipLibrary2.cel[0].cev[48].cevr"
+connectAttr "proxyHero_rightToefootCtrl_translateX14.a" "clipLibrary4.cel[0].cev[48].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_rotateZ28.a" "clipLibrary2.cel[0].cev[53].cevr"
+connectAttr "proxyHero_rightFootCtrl_rotateZ28.a" "clipLibrary4.cel[0].cev[53].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_rotateY28.a" "clipLibrary2.cel[0].cev[54].cevr"
+connectAttr "proxyHero_rightFootCtrl_rotateY28.a" "clipLibrary4.cel[0].cev[54].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_rotateX28.a" "clipLibrary2.cel[0].cev[55].cevr"
+connectAttr "proxyHero_rightFootCtrl_rotateX28.a" "clipLibrary4.cel[0].cev[55].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_translateZ28.a" "clipLibrary2.cel[0].cev[56].cevr"
+connectAttr "proxyHero_rightFootCtrl_translateZ28.a" "clipLibrary4.cel[0].cev[56].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_translateY28.a" "clipLibrary2.cel[0].cev[57].cevr"
+connectAttr "proxyHero_rightFootCtrl_translateY28.a" "clipLibrary4.cel[0].cev[57].cevr"
 		;
-connectAttr "proxyHero_rightFootCtrl_translateX28.a" "clipLibrary2.cel[0].cev[58].cevr"
+connectAttr "proxyHero_rightFootCtrl_translateX28.a" "clipLibrary4.cel[0].cev[58].cevr"
 		;
-connectAttr "proxyHero_leftShoulderCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[63].cevr"
+connectAttr "proxyHero_leftShoulderCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[63].cevr"
 		;
-connectAttr "proxyHero_leftShoulderCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[64].cevr"
+connectAttr "proxyHero_leftShoulderCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[64].cevr"
 		;
-connectAttr "proxyHero_leftShoulderCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[65].cevr"
+connectAttr "proxyHero_leftShoulderCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[65].cevr"
 		;
-connectAttr "proxyHero_leftShoulderCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[66].cevr"
+connectAttr "proxyHero_leftShoulderCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[66].cevr"
 		;
-connectAttr "proxyHero_leftShoulderCtrl_translateY14.a" "clipLibrary2.cel[0].cev[67].cevr"
+connectAttr "proxyHero_leftShoulderCtrl_translateY14.a" "clipLibrary4.cel[0].cev[67].cevr"
 		;
-connectAttr "proxyHero_leftShoulderCtrl_translateX14.a" "clipLibrary2.cel[0].cev[68].cevr"
+connectAttr "proxyHero_leftShoulderCtrl_translateX14.a" "clipLibrary4.cel[0].cev[68].cevr"
 		;
-connectAttr "proxyHero_rightShoulderCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[73].cevr"
+connectAttr "proxyHero_rightShoulderCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[73].cevr"
 		;
-connectAttr "proxyHero_rightShoulderCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[74].cevr"
+connectAttr "proxyHero_rightShoulderCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[74].cevr"
 		;
-connectAttr "proxyHero_rightShoulderCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[75].cevr"
+connectAttr "proxyHero_rightShoulderCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[75].cevr"
 		;
-connectAttr "proxyHero_rightShoulderCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[76].cevr"
+connectAttr "proxyHero_rightShoulderCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[76].cevr"
 		;
-connectAttr "proxyHero_rightShoulderCtrl_translateY14.a" "clipLibrary2.cel[0].cev[77].cevr"
+connectAttr "proxyHero_rightShoulderCtrl_translateY14.a" "clipLibrary4.cel[0].cev[77].cevr"
 		;
-connectAttr "proxyHero_rightShoulderCtrl_translateX14.a" "clipLibrary2.cel[0].cev[78].cevr"
+connectAttr "proxyHero_rightShoulderCtrl_translateX14.a" "clipLibrary4.cel[0].cev[78].cevr"
 		;
-connectAttr "proxyHero_headCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[83].cevr";
-connectAttr "proxyHero_headCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[84].cevr";
-connectAttr "proxyHero_headCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[85].cevr";
-connectAttr "proxyHero_headCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[86].cevr"
+connectAttr "proxyHero_headCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[83].cevr";
+connectAttr "proxyHero_headCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[84].cevr";
+connectAttr "proxyHero_headCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[85].cevr";
+connectAttr "proxyHero_headCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[86].cevr"
 		;
-connectAttr "proxyHero_headCtrl_translateY14.a" "clipLibrary2.cel[0].cev[87].cevr"
+connectAttr "proxyHero_headCtrl_translateY14.a" "clipLibrary4.cel[0].cev[87].cevr"
 		;
-connectAttr "proxyHero_headCtrl_translateX14.a" "clipLibrary2.cel[0].cev[88].cevr"
+connectAttr "proxyHero_headCtrl_translateX14.a" "clipLibrary4.cel[0].cev[88].cevr"
 		;
-connectAttr "proxyHero_collarCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[93].cevr"
+connectAttr "proxyHero_collarCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[93].cevr"
 		;
-connectAttr "proxyHero_collarCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[94].cevr"
+connectAttr "proxyHero_collarCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[94].cevr"
 		;
-connectAttr "proxyHero_collarCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[95].cevr"
+connectAttr "proxyHero_collarCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[95].cevr"
 		;
-connectAttr "proxyHero_collarCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[96].cevr"
+connectAttr "proxyHero_collarCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[96].cevr"
 		;
-connectAttr "proxyHero_collarCtrl_translateY14.a" "clipLibrary2.cel[0].cev[97].cevr"
+connectAttr "proxyHero_collarCtrl_translateY14.a" "clipLibrary4.cel[0].cev[97].cevr"
 		;
-connectAttr "proxyHero_collarCtrl_translateX14.a" "clipLibrary2.cel[0].cev[98].cevr"
+connectAttr "proxyHero_collarCtrl_translateX14.a" "clipLibrary4.cel[0].cev[98].cevr"
 		;
-connectAttr "proxyHero_rightElbowCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[103].cevr"
+connectAttr "proxyHero_rightElbowCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[103].cevr"
 		;
-connectAttr "proxyHero_rightElbowCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[104].cevr"
+connectAttr "proxyHero_rightElbowCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[104].cevr"
 		;
-connectAttr "proxyHero_rightElbowCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[105].cevr"
+connectAttr "proxyHero_rightElbowCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[105].cevr"
 		;
-connectAttr "proxyHero_rightElbowCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[106].cevr"
+connectAttr "proxyHero_rightElbowCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[106].cevr"
 		;
-connectAttr "proxyHero_rightElbowCtrl_translateY14.a" "clipLibrary2.cel[0].cev[107].cevr"
+connectAttr "proxyHero_rightElbowCtrl_translateY14.a" "clipLibrary4.cel[0].cev[107].cevr"
 		;
-connectAttr "proxyHero_rightElbowCtrl_translateX14.a" "clipLibrary2.cel[0].cev[108].cevr"
+connectAttr "proxyHero_rightElbowCtrl_translateX14.a" "clipLibrary4.cel[0].cev[108].cevr"
 		;
-connectAttr "proxyHero_rightHandCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[118].cevr"
+connectAttr "proxyHero_rightHandCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[118].cevr"
 		;
-connectAttr "proxyHero_rightHandCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[119].cevr"
+connectAttr "proxyHero_rightHandCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[119].cevr"
 		;
-connectAttr "proxyHero_rightHandCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[120].cevr"
+connectAttr "proxyHero_rightHandCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[120].cevr"
 		;
-connectAttr "proxyHero_rightHandCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[121].cevr"
+connectAttr "proxyHero_rightHandCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[121].cevr"
 		;
-connectAttr "proxyHero_rightHandCtrl_translateY14.a" "clipLibrary2.cel[0].cev[122].cevr"
+connectAttr "proxyHero_rightHandCtrl_translateY14.a" "clipLibrary4.cel[0].cev[122].cevr"
 		;
-connectAttr "proxyHero_rightHandCtrl_translateX14.a" "clipLibrary2.cel[0].cev[123].cevr"
+connectAttr "proxyHero_rightHandCtrl_translateX14.a" "clipLibrary4.cel[0].cev[123].cevr"
 		;
-connectAttr "proxyHero_leftElbowCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[128].cevr"
+connectAttr "proxyHero_leftElbowCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[128].cevr"
 		;
-connectAttr "proxyHero_leftElbowCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[129].cevr"
+connectAttr "proxyHero_leftElbowCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[129].cevr"
 		;
-connectAttr "proxyHero_leftElbowCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[130].cevr"
+connectAttr "proxyHero_leftElbowCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[130].cevr"
 		;
-connectAttr "proxyHero_leftElbowCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[131].cevr"
+connectAttr "proxyHero_leftElbowCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[131].cevr"
 		;
-connectAttr "proxyHero_leftElbowCtrl_translateY14.a" "clipLibrary2.cel[0].cev[132].cevr"
+connectAttr "proxyHero_leftElbowCtrl_translateY14.a" "clipLibrary4.cel[0].cev[132].cevr"
 		;
-connectAttr "proxyHero_leftElbowCtrl_translateX14.a" "clipLibrary2.cel[0].cev[133].cevr"
+connectAttr "proxyHero_leftElbowCtrl_translateX14.a" "clipLibrary4.cel[0].cev[133].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_leftPink4.a" "clipLibrary2.cel[0].cev[135].cevr"
+connectAttr "proxyHero_leftHandCtrl_leftPink4.a" "clipLibrary4.cel[0].cev[135].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_leftRing4.a" "clipLibrary2.cel[0].cev[136].cevr"
+connectAttr "proxyHero_leftHandCtrl_leftRing4.a" "clipLibrary4.cel[0].cev[136].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_leftMiddle4.a" "clipLibrary2.cel[0].cev[137].cevr"
+connectAttr "proxyHero_leftHandCtrl_leftMiddle4.a" "clipLibrary4.cel[0].cev[137].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_leftIndex4.a" "clipLibrary2.cel[0].cev[138].cevr"
+connectAttr "proxyHero_leftHandCtrl_leftIndex4.a" "clipLibrary4.cel[0].cev[138].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_leftThumb4.a" "clipLibrary2.cel[0].cev[139].cevr"
+connectAttr "proxyHero_leftHandCtrl_leftThumb4.a" "clipLibrary4.cel[0].cev[139].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[143].cevr"
+connectAttr "proxyHero_leftHandCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[143].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[144].cevr"
+connectAttr "proxyHero_leftHandCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[144].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[145].cevr"
+connectAttr "proxyHero_leftHandCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[145].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[146].cevr"
+connectAttr "proxyHero_leftHandCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[146].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_translateY14.a" "clipLibrary2.cel[0].cev[147].cevr"
+connectAttr "proxyHero_leftHandCtrl_translateY14.a" "clipLibrary4.cel[0].cev[147].cevr"
 		;
-connectAttr "proxyHero_leftHandCtrl_translateX14.a" "clipLibrary2.cel[0].cev[148].cevr"
+connectAttr "proxyHero_leftHandCtrl_translateX14.a" "clipLibrary4.cel[0].cev[148].cevr"
 		;
-connectAttr "proxyHero_spine3Ctrl_rotateZ14.a" "clipLibrary2.cel[0].cev[153].cevr"
+connectAttr "proxyHero_spine3Ctrl_rotateZ14.a" "clipLibrary4.cel[0].cev[153].cevr"
 		;
-connectAttr "proxyHero_spine3Ctrl_rotateY14.a" "clipLibrary2.cel[0].cev[154].cevr"
+connectAttr "proxyHero_spine3Ctrl_rotateY14.a" "clipLibrary4.cel[0].cev[154].cevr"
 		;
-connectAttr "proxyHero_spine3Ctrl_rotateX14.a" "clipLibrary2.cel[0].cev[155].cevr"
+connectAttr "proxyHero_spine3Ctrl_rotateX14.a" "clipLibrary4.cel[0].cev[155].cevr"
 		;
-connectAttr "proxyHero_spine3Ctrl_translateZ14.a" "clipLibrary2.cel[0].cev[156].cevr"
+connectAttr "proxyHero_spine3Ctrl_translateZ14.a" "clipLibrary4.cel[0].cev[156].cevr"
 		;
-connectAttr "proxyHero_spine3Ctrl_translateY14.a" "clipLibrary2.cel[0].cev[157].cevr"
+connectAttr "proxyHero_spine3Ctrl_translateY14.a" "clipLibrary4.cel[0].cev[157].cevr"
 		;
-connectAttr "proxyHero_spine3Ctrl_translateX14.a" "clipLibrary2.cel[0].cev[158].cevr"
+connectAttr "proxyHero_spine3Ctrl_translateX14.a" "clipLibrary4.cel[0].cev[158].cevr"
 		;
-connectAttr "proxyHero_spine2Ctrl_rotateZ14.a" "clipLibrary2.cel[0].cev[163].cevr"
+connectAttr "proxyHero_spine2Ctrl_rotateZ14.a" "clipLibrary4.cel[0].cev[163].cevr"
 		;
-connectAttr "proxyHero_spine2Ctrl_rotateY14.a" "clipLibrary2.cel[0].cev[164].cevr"
+connectAttr "proxyHero_spine2Ctrl_rotateY14.a" "clipLibrary4.cel[0].cev[164].cevr"
 		;
-connectAttr "proxyHero_spine2Ctrl_rotateX14.a" "clipLibrary2.cel[0].cev[165].cevr"
+connectAttr "proxyHero_spine2Ctrl_rotateX14.a" "clipLibrary4.cel[0].cev[165].cevr"
 		;
-connectAttr "proxyHero_spine2Ctrl_translateZ14.a" "clipLibrary2.cel[0].cev[166].cevr"
+connectAttr "proxyHero_spine2Ctrl_translateZ14.a" "clipLibrary4.cel[0].cev[166].cevr"
 		;
-connectAttr "proxyHero_spine2Ctrl_translateY14.a" "clipLibrary2.cel[0].cev[167].cevr"
+connectAttr "proxyHero_spine2Ctrl_translateY14.a" "clipLibrary4.cel[0].cev[167].cevr"
 		;
-connectAttr "proxyHero_spine2Ctrl_translateX14.a" "clipLibrary2.cel[0].cev[168].cevr"
+connectAttr "proxyHero_spine2Ctrl_translateX14.a" "clipLibrary4.cel[0].cev[168].cevr"
 		;
-connectAttr "proxyHero_spine1Ctrl_rotateZ14.a" "clipLibrary2.cel[0].cev[173].cevr"
+connectAttr "proxyHero_spine1Ctrl_rotateZ14.a" "clipLibrary4.cel[0].cev[173].cevr"
 		;
-connectAttr "proxyHero_spine1Ctrl_rotateY14.a" "clipLibrary2.cel[0].cev[174].cevr"
+connectAttr "proxyHero_spine1Ctrl_rotateY14.a" "clipLibrary4.cel[0].cev[174].cevr"
 		;
-connectAttr "proxyHero_spine1Ctrl_rotateX14.a" "clipLibrary2.cel[0].cev[175].cevr"
+connectAttr "proxyHero_spine1Ctrl_rotateX14.a" "clipLibrary4.cel[0].cev[175].cevr"
 		;
-connectAttr "proxyHero_spine1Ctrl_translateZ14.a" "clipLibrary2.cel[0].cev[176].cevr"
+connectAttr "proxyHero_spine1Ctrl_translateZ14.a" "clipLibrary4.cel[0].cev[176].cevr"
 		;
-connectAttr "proxyHero_spine1Ctrl_translateY14.a" "clipLibrary2.cel[0].cev[177].cevr"
+connectAttr "proxyHero_spine1Ctrl_translateY14.a" "clipLibrary4.cel[0].cev[177].cevr"
 		;
-connectAttr "proxyHero_spine1Ctrl_translateX14.a" "clipLibrary2.cel[0].cev[178].cevr"
+connectAttr "proxyHero_spine1Ctrl_translateX14.a" "clipLibrary4.cel[0].cev[178].cevr"
 		;
-connectAttr "proxyHero_rootCtrl_rotateZ14.a" "clipLibrary2.cel[0].cev[183].cevr"
+connectAttr "proxyHero_rootCtrl_rotateZ14.a" "clipLibrary4.cel[0].cev[183].cevr"
 		;
-connectAttr "proxyHero_rootCtrl_rotateY14.a" "clipLibrary2.cel[0].cev[184].cevr"
+connectAttr "proxyHero_rootCtrl_rotateY14.a" "clipLibrary4.cel[0].cev[184].cevr"
 		;
-connectAttr "proxyHero_rootCtrl_rotateX14.a" "clipLibrary2.cel[0].cev[185].cevr"
+connectAttr "proxyHero_rootCtrl_rotateX14.a" "clipLibrary4.cel[0].cev[185].cevr"
 		;
-connectAttr "proxyHero_rootCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[186].cevr"
+connectAttr "proxyHero_rootCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[186].cevr"
 		;
-connectAttr "proxyHero_rootCtrl_translateY14.a" "clipLibrary2.cel[0].cev[187].cevr"
+connectAttr "proxyHero_rootCtrl_translateY14.a" "clipLibrary4.cel[0].cev[187].cevr"
 		;
-connectAttr "proxyHero_rootCtrl_translateX14.a" "clipLibrary2.cel[0].cev[188].cevr"
+connectAttr "proxyHero_rootCtrl_translateX14.a" "clipLibrary4.cel[0].cev[188].cevr"
 		;
-connectAttr "proxyHero_translateCtrl_translateZ14.a" "clipLibrary2.cel[0].cev[193].cevr"
+connectAttr "proxyHero_translateCtrl_translateZ14.a" "clipLibrary4.cel[0].cev[193].cevr"
 		;
-connectAttr "proxyHero_translateCtrl_translateY14.a" "clipLibrary2.cel[0].cev[194].cevr"
+connectAttr "proxyHero_translateCtrl_translateY14.a" "clipLibrary4.cel[0].cev[194].cevr"
 		;
-connectAttr "proxyHero_translateCtrl_translateX14.a" "clipLibrary2.cel[0].cev[195].cevr"
+connectAttr "proxyHero_translateCtrl_translateX14.a" "clipLibrary4.cel[0].cev[195].cevr"
 		;
 // End of chargeSlash1.ma

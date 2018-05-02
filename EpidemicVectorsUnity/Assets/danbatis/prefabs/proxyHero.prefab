@@ -276,9 +276,10 @@ GameObject:
   - component: {fileID: 4382043852830970}
   - component: {fileID: 33616552103218066}
   - component: {fileID: 23112457696988790}
+  - component: {fileID: 65294433247051834}
   m_Layer: 0
   m_Name: swordRight
-  m_TagString: Untagged
+  m_TagString: PlayerWeapon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -535,6 +536,7 @@ GameObject:
   - component: {fileID: 95739900477486768}
   - component: {fileID: 143900315320591250}
   - component: {fileID: 114380164488823954}
+  - component: {fileID: 82358255702213048}
   m_Layer: 0
   m_Name: proxyHero
   m_TagString: Player
@@ -1941,6 +1943,98 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1250937927770040}
   m_Mesh: {fileID: 4300002, guid: 1a065ec634993854985b81f1351ee12b, type: 3}
+--- !u!65 &65294433247051834
+BoxCollider:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1250937927770040}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.3739288, y: 0.07966709, z: 0.87506735}
+  m_Center: {x: 0.83782876, y: 1.373543, z: 0.5043977}
+--- !u!82 &82358255702213048
+AudioSource:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1608762247799570}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 0
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 0
 --- !u!95 &95739900477486768
 Animator:
   serializedVersion: 3
@@ -1969,6 +2063,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2e8e7403d248e34b9030fcdfb30fe9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lethal: 0
+  knockDownHit: 0
+  life: 100
+  fatherTransform: {fileID: 0}
   myGravity: 1
   vertAcel: 5
   maxVertVelUp: 50
@@ -1979,12 +2077,24 @@ MonoBehaviour:
   frictionAcel: 2
   maxVel: 25
   imperceptibleSpeed: 2
-  oscilSpeed: 0.25
+  oscilSpeed: 0.1
   oscilFreq: 5
   chargeAcel: 10
   maxChargeSpeed: 50
-  doubleSpaceTime: 0.4
   attackRotSpeed: 15
+  attackSpeedMax: 12.5
+  attackAcel: 20
+  aimAssist: 0
+  aimAssistRange: 50
+  aimTarget: {fileID: 0}
+  aimSmooth: 0
+  lockedSmooth: 10
+  lockingSmooth: 5
+  mosquitoHeight: 0.5
+  knockDownSpeed: 5
+  knockDownTime: 2
+  ariseTime: 0.75
+  lockOnTime: 0.125
   planarAnimRate: 10
   attackLine: 0
   attackTime: 0.25
@@ -1994,7 +2104,13 @@ MonoBehaviour:
   attackFull: 0
   coolingDown: 0
   lastAttack: 1
-  lethal: 0
+  damageTime: 1
+  damageForce: 4
+  recoilAcel: 1
+  closeRange: 1.5
+  damageSounds:
+  - {fileID: 8300000, guid: cb4dfdf983f321d4bb3d957768960408, type: 3}
+  - {fileID: 8300000, guid: f1cb653fb290da64e9820cee5b403ada, type: 3}
   groundLimit: 10
 --- !u!137 &137540583713684988
 SkinnedMeshRenderer:

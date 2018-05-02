@@ -22,6 +22,7 @@ public class TPCamera : MonoBehaviour {
 	public float camLateralDisplaceFar = 2.5f;
 	public float camHeightClose = 1.0f;
 	public float camHeightFar = 2.0f;
+	public float autoAimLimit = 30.0f;
 	
 	float currCamDistance;
 	float currLateralDisplace;
@@ -101,8 +102,52 @@ public class TPCamera : MonoBehaviour {
 			pseudoForth = Vector3.ProjectOnPlane(pseudoForth, Vector3.up);
 			newForth = (target.position - (currCamHeight/2)*Vector3.up) - (target.position - pseudoForth*currCamDistance);
 			*/
-			newForth = playerControl.aimTarget.position - target.position;
-			ReorientCam(playerControl.aimSmooth);
+
+			rotx = myTransform.forward * Mathf.Cos(xRot) + myTransform.right * Mathf.Sin(xRot);
+			roty = myTransform.forward * Mathf.Cos(yRot) + myTransform.up * Mathf.Sin(yRot);
+			newForth = rotx + roty;
+
+			float newDeltaAim = Vector3.Angle(newForth, target.forward);
+			float deltaAim = Vector3.Angle(myTransform.forward, target.forward);
+
+			/*
+			if( newDeltaAim > autoAimLimit ){
+				//newForth = playerControl.aimTarget.position - target.position;
+
+				newForth = target.forward + (Mathf.Sin(autoAimLimit))*(myTransform.forward - target.forward);
+
+				ReorientCam(playerControl.aimSmooth);
+			}
+			else{
+				if(newDeltaAim <= deltaAim ){
+					ReorientCam(smoothRot);
+				}
+				else{
+					if( newDeltaAim < 0.75f*autoAimLimit )
+						ReorientCam(smoothRot);
+				}
+
+			}
+			*/
+
+			if(deltaAim > autoAimLimit){
+				newForth = playerControl.aimTarget.position - target.position;
+				ReorientCam((deltaAim - autoAimLimit)*0.1f*smoothRot);
+			}
+			else{
+				if(deltaAim < 0.5f*autoAimLimit){
+					ReorientCam(smoothRot);
+				}
+				else{
+					if(newDeltaAim <= deltaAim ){
+						ReorientCam(smoothRot);
+					}
+					else{
+						ReorientCam((autoAimLimit - deltaAim)*0.1f*smoothRot);
+					}
+				}
+			}
+
 		}
 		else{			
 			rotx = myTransform.forward * Mathf.Cos(xRot) + myTransform.right * Mathf.Sin(xRot);
@@ -133,7 +178,8 @@ public class TPCamera : MonoBehaviour {
 					//Debug.Log("<color=red>need to change character opacity, it is probably blocking view</color>");
 					camPosition = raycastOrigin + camDistanceClose*(hit.point - raycastOrigin).normalized;
 				}
-				else{				
+				else{
+					//Debug.Log("<color=red>camera repositioned</color>");
 					camPosition = hit.point;
 				}
 			}				
@@ -156,6 +202,7 @@ public class TPCamera : MonoBehaviour {
 		//Debug.Log("<color=blue>blindRot: "+blindRot.ToString()+"</color>");
 		if(blindRot > insignificantRotation && blindRot < 180 - insignificantRotation){
 			newForth.Normalize();
+
 			myTransform.forward = Vector3.Lerp(myTransform.forward, newForth, Time.deltaTime * reorientRate);
 		}
 	}

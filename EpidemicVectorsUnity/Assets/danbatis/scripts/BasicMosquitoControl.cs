@@ -20,9 +20,17 @@ public class BasicMosquitoControl : Mutation {
 	float groundHeight;
 
 	public float damageTime = 0.5f;
+	public float damageSpeedMax = 12.5f;
+	public float damageAcel = 20.0f;
+	float desiredDamageSpeed;
+	float damageSpeed;
 	float oldAngle;
 	float initialAngle;
 	bool angleReset;
+	AudioSource myAudio;
+	public AudioClip damageSound;
+	public AudioClip knockDownSound;
+
 
 	public float maxFallSpeed = 10f;
 	float fallSpeed;
@@ -40,11 +48,14 @@ public class BasicMosquitoControl : Mutation {
 
 	Vector3 mosquitoMove;
 	Vector3 desiredMove;
+	Vector3 damageVector;
 
 	int battleMode;
 	public float closeRange = 2.0f;
-	public float attackDeltaHeight = 0.5f;
+	public float playerHeight = 0.5f;
 	float playerDist;
+	float deltaHeight;
+	Vector3 attackPos;
 
 	int lastAttack;
 	public int aggressivity = 5;
@@ -55,7 +66,7 @@ public class BasicMosquitoControl : Mutation {
 
 	public int twistPreference = 5;
 
-	public float attackAdvancePortion = 0.25f;
+	public float attackAdvancePortion = 0.75f;
 	public float prepareAttackTime = 0.3f;
 	float startAttackTime;
 
@@ -93,6 +104,7 @@ public class BasicMosquitoControl : Mutation {
 		myTransform = transform;
 		myControl = GetComponent<CharacterController>();
 		playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
+		myAudio = GetComponent<AudioSource>();
 		initialPosition = myTransform.position;
 		initialAngle = myTransform.eulerAngles.y;
 
@@ -139,26 +151,33 @@ public class BasicMosquitoControl : Mutation {
 			break;
 			case state.knockDownHitGround:
 				KDSlideOnGround();
+			break;
+			case state.knockDownArise:
+				battleMove = Mathf.Lerp(battleMove, desiredSpeed, battleAcel*Time.deltaTime);
+				mosquitoMove = battleMove*desiredMove;	
+				myControl.Move(mosquitoMove*Time.deltaTime);
 			break;	
 			case state.resting:
 				//Debug.Log("<color=red>going to rest</color>");
 				//myAnim.SetBool("land", true);
 			break;
 			case state.battle:
-				myAnim.SetBool("land", false);				
+				myAnim.SetBool("land", false);
+				Debug.DrawRay(attackPos, myTransform.forward, new Color (0.0f, 1.0f, 0.75f));//light blue
+				//Debug.Log("<color=blue>delta height: "+(myTransform.position.y - playerTransform.position.y).ToString()+"</color>");
+				deltaHeight = myTransform.position.y - playerTransform.position.y;
 				if(actionBusy){
 					myTransform.LookAt(playerTransform);
 					if(battleMode==0){
 
 						//if at same height and close range, attack
 						playerDist = Vector3.Distance(myTransform.position, playerTransform.position);
-						if(Mathf.Abs(myTransform.position.y - playerTransform.position.y) <= attackDeltaHeight && playerDist <= closeRange && playerDist >= 0.8*closeRange){
-							//if(battleMode == 0)
+						if(deltaHeight >= 0.9f*playerHeight && deltaHeight <= 1.1f*playerHeight && playerDist <= closeRange && playerDist >= 0.8*closeRange){
 							StartAttack();
 						}
 						else{
 							//move closer, but first adjust height
-							Vector3 attackPos = playerTransform.position + closeRange * Vector3.ProjectOnPlane((myTransform.position - playerTransform.position).normalized, Vector3.up);
+							attackPos = playerTransform.position + Vector3.up*playerHeight + closeRange * Vector3.ProjectOnPlane((myTransform.position - playerTransform.position).normalized, Vector3.up);
 							desiredMove = (attackPos - myTransform.position).normalized;
 							//Debug.Log("<color=yellow>"+gameObject.name+" decided to fight</color>");
 						}
@@ -169,27 +188,12 @@ public class BasicMosquitoControl : Mutation {
 					battleMove = Mathf.Lerp(battleMove, desiredSpeed, battleAcel*Time.deltaTime);
 					mosquitoMove = battleMove*desiredMove;	
 					myControl.Move(mosquitoMove*Time.deltaTime);
-					
-					/*
-					if(attackConnected){
-						//in case attack connects, keep optimal attack distance
-						Vector3 optimalPos = playerTransform.position + 0.25f*closeRange * Vector3.ProjectOnPlane((myTransform.position - playerTransform.position).normalized, Vector3.up);
-						myTransform.position = optimalPos;
-						//mosquitoMove = playerTransform.position - myTransform.position;
-						//myControl.Move(mosquitoMove*Time.deltaTime);
-					}
-					else{
-						battleMove = Mathf.Lerp(battleMove, desiredSpeed, battleAcel*Time.deltaTime);
-						mosquitoMove = battleMove*desiredMove;	
-						myControl.Move(mosquitoMove*Time.deltaTime);
-					}
-					*/
+										
 				}				
-				else{					
+				else{
 					//if at same height and close range, attack
 					playerDist = Vector3.Distance(myTransform.position, playerTransform.position);
-					if(Mathf.Abs(myTransform.position.y - playerTransform.position.y) <= attackDeltaHeight && playerDist <= closeRange && playerDist >= 0.8*closeRange){
-						//if(battleMode == 0)
+					if(deltaHeight >= 0.9f*playerHeight && deltaHeight <= 1.1f*playerHeight && playerDist <= closeRange && playerDist >= 0.8*closeRange){
 						StartAttack();					
 					}
 					else{
@@ -200,43 +204,52 @@ public class BasicMosquitoControl : Mutation {
 			break;
 			case state.attacking:
 				if(Time.time - startAttackTime <= prepareAttackTime){
-					//just waits for the animation to finish
+					//just waits for the animation to start
 				}
 				else{
 					if(Time.time - startAttackTime <= prepareAttackTime+attackTime){
 						//change from accelerating to deacelerating
 						if(Time.time - startAttackTime > prepareAttackTime+attackAdvancePortion*attackTime){
-							lethal = false;
 							battleAcel = mosquitoDeacel;
 							desiredSpeed = 0f;
 							myAnim.SetBool("twistAttack", false);
-
 						}
-
-						if(attackConnected){
-							attackConnected = false;
-							//decide followup or not
-							if(Random.Range(0,10) <= aggressivity){
-								FollowUp();
-							}				
-						}
-						else{
+						
+						//if attack connects, stop advancing for the followup
+						if(!attackConnected){
 							//advance while attacking
 							battleMove = Mathf.Lerp(battleMove, desiredSpeed, battleAcel*Time.deltaTime);
 							//desiredMove = myTransform.forward;
 							mosquitoMove = battleMove*desiredMove;
 							myControl.Move(mosquitoMove*Time.deltaTime);
 						}
+						
 					}
 					else{
 						//attack ended
-						myState = state.battle;
-						myKnockDownHit = false;
-						lastAttack = 0;
-						myAnim.SetInteger("attackID", lastAttack);
-						//Debug.Log("<color=blue>"+gameObject.name+" finished attacking</color>");
+						lethal = false;
+						if(attackConnected){
+							attackConnected = false;
+							//decide followup or not
+							if(Random.Range(0,10) <= aggressivity && lastAttack < 3){
+								FollowUp();
+							}				
+						}
+						else{
+							myState = state.battle;
+							myKnockDownHit = false;
+							lastAttack = 0;
+							myAnim.SetInteger("attackID", lastAttack);
+							//Debug.Log("<color=blue>"+gameObject.name+" finished attacking</color>");
+						}
 					}
 				}
+			break;
+			case state.beingDamaged:
+				//move backwards
+				damageSpeed = Mathf.Lerp(damageSpeed, desiredDamageSpeed, damageAcel*Time.deltaTime);
+				desiredMove = damageSpeed*damageVector;
+				myControl.Move(desiredMove*Time.deltaTime);				
 			break;
 		}
 	}
@@ -248,7 +261,6 @@ public class BasicMosquitoControl : Mutation {
 		startAttackTime = Time.time;
 		myTransform.LookAt(playerTransform);
 
-
 		lastAttack = 0;
 		myAnim.SetInteger("attackID", lastAttack);
 		//starting brand new attack
@@ -257,7 +269,7 @@ public class BasicMosquitoControl : Mutation {
 		lethal = true;
 		//pick attack advance speed
 		battleAcel = mosquitoAcel;
-		desiredMove = (playerTransform.position - myTransform.position).normalized;
+		desiredMove = (playerTransform.position + Vector3.up*0.5f*playerHeight - myTransform.position).normalized;
 		desiredSpeed = battleSpeed;
 		if(Random.Range(1,10) <= twistPreference){
 			attackTime = twistAttackTime;
@@ -273,7 +285,6 @@ public class BasicMosquitoControl : Mutation {
 			lastAttack = 1;
 			Debug.Log("<color=orange>"+gameObject.name+" started attacking firstAttack</color>");
 			myAnim.SetInteger("attackID", lastAttack);
-							
 		}
 
 	}
@@ -284,7 +295,7 @@ public class BasicMosquitoControl : Mutation {
 		lethal = true;
 		//pick attack advance speed
 		battleAcel = mosquitoAcel;
-		//desiredMove = (playerTransform.position - myTransform.position).normalized;
+		desiredMove = (playerTransform.position + Vector3.up*0.5f*playerHeight - myTransform.position).normalized;
 		desiredSpeed = battleSpeed;
 
 		//normal combo
@@ -307,7 +318,9 @@ public class BasicMosquitoControl : Mutation {
 			battleMode = 0;
 		else
 			battleMode = Random.Range(1,4);
-		
+
+		//danbatis testing player attacks
+		battleMode = 0;
 		//Debug.Log("<color=yellow>"+gameObject.name+" Taking new action: "+battleMode.ToString()+"</color>");
 
 		switch(battleMode){
@@ -340,8 +353,8 @@ public class BasicMosquitoControl : Mutation {
 	}
 
 	void KDSlideOnGround(){
-		fallSpeed = Mathf.Lerp(fallSpeed, 0f, fakeGravity*Time.deltaTime);
-		mosquitoMove = (-fallSpeed*myTransform.forward)*Time.deltaTime;
+		fallSpeed = Mathf.Lerp(fallSpeed, maxFallSpeed, fakeGravity*Time.deltaTime);
+		mosquitoMove = (knockDownSpeed*damageVector - fallSpeed*myTransform.up)*Time.deltaTime;
 		myControl.Move(mosquitoMove);
 		if(Time.time - knockDownHitTime >= knockDownTime){
 			StartCoroutine(AriseFromKD());
@@ -350,13 +363,14 @@ public class BasicMosquitoControl : Mutation {
 	void KDflight(){
 		//fall to the ground
 		fallSpeed = Mathf.Lerp(fallSpeed, maxFallSpeed, fakeGravity*Time.deltaTime);
-		mosquitoMove = (-knockDownSpeed*myTransform.forward - fallSpeed*myTransform.up)*Time.deltaTime;
+		mosquitoMove = (knockDownSpeed*damageVector - fallSpeed*myTransform.up)*Time.deltaTime;
 		myControl.Move(mosquitoMove);
 
 		if(myControl.isGrounded){
 			knockDownHitTime = Time.time;
 			myState = state.knockDownHitGround;
 			myAnim.SetInteger("knockDownPhase", 2);
+			fallSpeed = -maxFallSpeed/2f;
 		}
 	}
 	void Hover(){
@@ -403,18 +417,38 @@ public class BasicMosquitoControl : Mutation {
 		yield return new WaitForSeconds(timeToTakeOff);
 		myState = state.takingOff;
 	}
-	IEnumerator BeDamaged(){
+	IEnumerator BeDamaged(Vector3 DamageVector){
+		myAudio.PlayOneShot(damageSound);
 		//just save if it is the first hit
 		if(myState != state.beingDamaged)
 			oldState = myState;
-		
+
+		damageVector = DamageVector;
+		CancelAttack();
 		myState = state.beingDamaged;
 		myAnim.SetInteger("damageID", Random.Range(1,2));
+		yield return new WaitForSeconds(0.25f*damageTime);
+		desiredDamageSpeed = damageSpeedMax;
+		yield return new WaitForSeconds(0.75f*damageTime);
+		desiredDamageSpeed = 0f;
 		yield return new WaitForSeconds(damageTime);
 		myAnim.SetInteger("damageID", 0);
 		myState = oldState;
 	}
-	IEnumerator BeKnockedDown(){
+	void CancelAttack(){
+		lethal = false;
+		attackConnected = false;
+		if(oldState == state.attacking)
+			oldState = state.battle;
+
+		lastAttack = 0;
+		//battleMode = 1;
+		actionBusy = false;
+
+	}
+	IEnumerator BeKnockedDown(Vector3 DamageVector){
+		myAudio.PlayOneShot(knockDownSound);
+		damageVector = DamageVector;
 		//delay
 		//yield return new WaitForSeconds(2.0f);
 		fallSpeed = 0f;
@@ -428,6 +462,9 @@ public class BasicMosquitoControl : Mutation {
 		myState = state.knockDownFlight;		
 	}
 	IEnumerator AriseFromKD(){
+		battleMove = 0f;
+		desiredSpeed = takeOffSpeed;
+		desiredMove = Vector3.up;
 		myState = state.knockDownArise;
 		myAnim.SetInteger("knockDownPhase", 3);
 		yield return new WaitForSeconds(ariseTime);
@@ -440,11 +477,11 @@ public class BasicMosquitoControl : Mutation {
 			if (algoz.lethal){
 				if(algoz.knockDownHit){
 					Debug.Log ("<color=red>" + gameObject.name + " being knocked Down</color>");
-					StartCoroutine(BeKnockedDown());
+					StartCoroutine(BeKnockedDown(algoz.fatherTransform.forward));
 				}
 				else{
 					Debug.Log ("<color=orange>" + gameObject.name + " being damaged</color>");
-					StartCoroutine(BeDamaged());
+					StartCoroutine(BeDamaged(algoz.fatherTransform.forward));
 				}
 
 			}

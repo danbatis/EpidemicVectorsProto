@@ -24,17 +24,32 @@ public class ProxyRobotControl : Weapon {
 	public float maxChargeSpeed = 50.0f;
 
 	public float attackRotSpeed = 15f;
+	public float attackSpeedMax = 12.5f;
+	public float attackAcel = 20.0f;
+	float desiredAttackSpeed;
+	float attackSpeed;
 
 	bool stabilize;
 	public bool aimAssist;
 	public float aimAssistRange = 50f;
 	public Transform aimTarget;
 	public float aimSmooth;
+	Vector3 aimDir;
+	Vector3 aimDirProj;
 	public float lockedSmooth = 10.0f;
 	public float lockingSmooth = 5.0f;
+	public float mosquitoHeight = 0.5f;
 	Mutation targetControl;
 
+	//knockDown variables
+	float fallSpeed;
+	public float knockDownSpeed = 5.0f;
+	float knockDownHitTime;
+	public float knockDownTime = 2.0f;
+	public float ariseTime = 0.75f;
+
 	RawImage lockFX1,lockFX2,lockFX3,lockFX4,lockFXg;
+	Image lifeBar;
 	Vector3 targetScreenPos;
 	Vector3 previousTargetScreenPos;
 	Vector3 tempPosLockFX1, tempPosLockFX2, tempPosLockFX3, tempPosLockFX4;
@@ -73,8 +88,14 @@ public class ProxyRobotControl : Weapon {
 	public bool coolingDown;
 	public int lastAttack=1;
 	public float damageTime = 1.0f;
+	public float damageForce = 5.0f;
 	public float recoilAcel = 10f;
+	public float closeRange = 1.5f;
 	Vector3 damageVector;
+
+	AudioSource myAudio;
+	public AudioClip[] damageSounds; 
+
 
 	public enum quadrant{
 		center,
@@ -93,6 +114,9 @@ public class ProxyRobotControl : Weapon {
 		beingDamaged,
 		defending,
 		attacking,
+		knockDownFlight,
+		knockDownGround,
+		knockDownRise,
 		grappling
 	}
 	state mystate;
@@ -107,7 +131,9 @@ public class ProxyRobotControl : Weapon {
 		myControl = GetComponent<CharacterController>();
 		myAnim = GetComponent<Animator>();
 		myTransform = transform;
+		fatherTransform = myTransform;
 		camTransform = GameObject.FindGameObjectWithTag("MainCamera").transform;
+		myAudio = GetComponent<AudioSource>();
 
 		//UI
 		lockFX1 = GameObject.Find("GUI/lockFX1").GetComponent<RawImage>();
@@ -115,19 +141,30 @@ public class ProxyRobotControl : Weapon {
 		lockFX3 = GameObject.Find("GUI/lockFX3").GetComponent<RawImage>();
 		lockFX4 = GameObject.Find("GUI/lockFX4").GetComponent<RawImage>();
 		lockFXg = GameObject.Find("GUI/lockFXg").GetComponent<RawImage>();
+		lifeBar = GameObject.Find("GUI/lifeBar").GetComponent<Image>();
 		
 		planarMovement = Vector3.zero;
 		mystate = state.free;
 	}
 	
 	// Update is called once per frame
-	void LateUpdate(){		
-		projOnFloor = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up);		
-		//with some delay, player character rotates after the camera
-		myTransform.forward = Vector3.Lerp(myTransform.forward, projOnFloor, attackRotSpeed*Time.deltaTime);
-		//without delay, player rotates as fast as the camera
-		//myTransform.forward = projOnFloor;
-		
+	void LateUpdate(){
+		myAnim.SetBool("aimAssist", aimAssist);
+		if(aimAssist){
+			aimDirProj = Vector3.ProjectOnPlane(aimDir, Vector3.up);
+			myTransform.forward = Vector3.Lerp(myTransform.forward, aimDirProj, attackRotSpeed*Time.deltaTime);
+		}
+		else{
+			if((int)mystate <= 3){
+				projOnFloor = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up);		
+				//with some delay, player character rotates after the camera
+				myTransform.forward = Vector3.Lerp(myTransform.forward, projOnFloor, attackRotSpeed*Time.deltaTime);
+				Debug.DrawRay(myTransform.position, 10.0f*myTransform.forward, new Color (0.0f, 1.0f, 0.0f));//green
+				//without delay, player rotates as fast as the camera
+				//myTransform.forward = projOnFloor;
+			}
+		}
+
 		switch(mystate){
 			case state.free:
 				Listen4AimAssist();
@@ -146,35 +183,101 @@ public class ProxyRobotControl : Weapon {
 			case state.defending:
 				LockOn();
 				Listen4Shield();
-
+				Thrust();
+				CalculateInertiaMovement();
+				Movement();
 			break;
 			case state.attacking:
 				vertSpeed = 0f;
 				//VerticalThrust();
 				//Listen4Shield();
-				CalculateInertiaMovement();
+				AttackMovement();
 				Movement();
 				Listen4Attack();
+				Listen4Shield();
 				LockOn();
 			break;
 			case state.beingDamaged:
 				//move backwards
+				//attackSpeed = Mathf.Lerp(attackSpeed, desiredAttackSpeed, attackAcel*Time.deltaTime);
 				damageVector = Vector3.Lerp(damageVector, Vector3.zero, recoilAcel*Time.deltaTime);
 				myControl.Move(damageVector*Time.deltaTime);
+				LockOn();
+			break;
+			case state.knockDownFlight:
+				aimAssist = false;
+				LockOn();
+				KnockDownFlight();
+			break;
+			case state.knockDownGround:
+				KnockDownGround();
+			break;
+			case state.knockDownRise:
+				KnockDownRise();
 			break;
 		}
+	}
+
+	void KnockDownFlight(){
+		//fall to the ground
+		fallSpeed = Mathf.Lerp(fallSpeed, maxVertVelDown, myGravity*Time.deltaTime);
+		movement = (knockDownSpeed*damageVector - fallSpeed*myTransform.up)*Time.deltaTime;
+		myControl.Move(movement);
+
+		if(myControl.isGrounded){
+			knockDownHitTime = Time.time;
+			mystate = state.knockDownGround;
+			myAnim.SetInteger("knockDownPhase", 3);
+			fallSpeed = -maxVertVelDown/8f;
+		}		
+	}
+	void KnockDownGround(){
+		fallSpeed = Mathf.Lerp(fallSpeed, maxVertVelDown, myGravity*Time.deltaTime);
+		movement = (knockDownSpeed*damageVector - fallSpeed*myTransform.up)*Time.deltaTime;
+		myControl.Move(movement);
+		if(Time.time - knockDownHitTime >= knockDownTime){
+			StartCoroutine(AriseFromKD());
+		}
+	}
+	IEnumerator AriseFromKD(){
+		fallSpeed = 0f;
+		damageVector = Vector3.up;
+		mystate = state.knockDownRise;
+		myAnim.SetInteger("knockDownPhase", 4);
+		yield return new WaitForSeconds(ariseTime);
+		mystate = oldState;
+	}
+	void KnockDownRise(){
+		fallSpeed = Mathf.Lerp(fallSpeed, maxVel/2f, myGravity*Time.deltaTime);
+		movement = fallSpeed*damageVector;	
+		myControl.Move(movement*Time.deltaTime);
 	}
 
 	public override void Damage(int hurtValue, bool knockDown, Vector3 recoilDir){
 		if(mystate == state.defending){
 			//play defend sound and instantiate FX
+			myAudio.PlayOneShot(damageSounds[0]);
 		}
 		else{
+			myAudio.PlayOneShot(damageSounds[Random.Range(1,damageSounds.Length-1)]);
+
 			//call base to subtract life
 			base.Damage(hurtValue,knockDown,recoilDir);
 
-			//move and animate
-			StartCoroutine( DamageRecoil(recoilDir) );
+			//update GUI
+			lifeBar.fillAmount = life/100f;
+
+			if(knockDown){
+				mystate = state.knockDownFlight;
+				myAnim.SetInteger("knockDownPhase",1);
+				myTransform.forward = -recoilDir;
+				fallSpeed = 0f;
+				damageVector = recoilDir;
+			}
+			else{
+				//move and animate
+				StartCoroutine( DamageRecoil(recoilDir) );
+			}
 		}
 	}
 
@@ -182,10 +285,10 @@ public class ProxyRobotControl : Weapon {
 		//check if simple recoil or knockDown
 
 		mystate = state.beingDamaged;
-		damageVector = recoil;
+		//prepare recoil vector
+		damageVector = damageForce*recoil;
 		//call damage animation
 		myAnim.SetInteger("damageID",Random.Range(1,3));
-		//prepare recoil vector
 		yield return new WaitForSeconds(damageTime);
 		myAnim.SetInteger("damageID",0);
 		mystate = state.free;
@@ -330,7 +433,18 @@ public class ProxyRobotControl : Weapon {
 		}
 		if(aimTarget){
 			targetControl = aimTarget.GetComponent<Mutation>();
-			aimAssist = true;
+
+			//check if target is too close and too high or low
+			float deltaHeight = Mathf.Abs(myTransform.position.y - aimTarget.position.y);
+			float zxDist = Vector3.ProjectOnPlane(myTransform.position - aimTarget.position, Vector3.up).magnitude;
+			Debug.Log("<color=green>zxDist for aimAssist: "+zxDist.ToString()+" deltaHeight: "+deltaHeight.ToString()+"</color>");
+			if(zxDist >= deltaHeight*closeRange){
+				aimAssist = true;
+				stabilize = true;
+			}
+			else{
+				aimAssist = false;
+			}
 		}
 		else{aimAssist = false;}
 	}
@@ -351,7 +465,7 @@ public class ProxyRobotControl : Weapon {
 		}
 	}
 	void Listen4Attack(){
-		if (attackFull == false && coolingDown == false){			
+		if (attackFull == false){// && coolingDown == false){
 			if(Input.GetKeyDown(KeyCode.Mouse0)){
 				attackLine++;
 				if(attackLine >= attacksMax){
@@ -372,25 +486,35 @@ public class ProxyRobotControl : Weapon {
 
 		yield return new WaitForSeconds(0.25f*attackTime);
 		lethal = true;
+		desiredAttackSpeed = attackSpeedMax;
 		yield return new WaitForSeconds(0.75f*attackTime);
 		//lethal = false;
+		desiredAttackSpeed = 0f;
 
-		//decide if follow a combo or returns to idle
 		attackLine--;
 
+		//decide if fast follow a combo or returns to idle
 		if (attackLine > 0 && lastAttack < attacksMax) {
 			lastAttack++;
 			StartCoroutine( simpleAttack() );
 		}
 		else{
-			StartCoroutine( RestartAttacks() );
+			StartCoroutine( CoolDown() );
 		}
 	}
-	IEnumerator RestartAttacks(){
+	IEnumerator CoolDown(){
 		coolingDown = true;
 		yield return new WaitForSeconds(cooldownTime);
-		mystate = state.free;
-		ClearAttacks();
+
+		//decide if slow follow or idle
+		if (attackLine > 0 && lastAttack < attacksMax) {
+			lastAttack++;
+			StartCoroutine( simpleAttack() );
+		}
+		else{
+			mystate = state.free;
+			ClearAttacks();
+		}
 	}
 
 	void ClearAttacks(){
@@ -469,12 +593,12 @@ public class ProxyRobotControl : Weapon {
 
 	void Thrust(){		
 		//sideways movement
-		if(Input.GetKey (KeyCode.D)){
+		if(Input.GetKey (KeyCode.D) && mystate != state.defending){
 			sideSpeed = maxVel/2;
 			sideAnim = Mathf.Lerp (sideAnim, 1.0f, planarAnimRate * Time.deltaTime);
 		} 
 		else{
-			if (Input.GetKey (KeyCode.A)){
+			if (Input.GetKey (KeyCode.A) && mystate != state.defending){
 				sideSpeed = -maxVel/2;
 				sideAnim = Mathf.Lerp (sideAnim, -1.0f, planarAnimRate * Time.deltaTime);
 
@@ -486,12 +610,12 @@ public class ProxyRobotControl : Weapon {
 		myAnim.SetFloat ("side", sideAnim);
 
 		//forth movement
-		if(Input.GetKey (KeyCode.W)){
+		if(Input.GetKey (KeyCode.W) && mystate != state.defending){
 			forthSpeed = maxVel;
 			forthAnim = Mathf.Lerp (forthAnim, 1.0f, planarAnimRate * Time.deltaTime);
 		} 
 		else{
-			if(Input.GetKey (KeyCode.S)){
+			if(Input.GetKey (KeyCode.S) && mystate != state.defending){
 				forthSpeed = -maxVel;
 				forthAnim = Mathf.Lerp(forthAnim, -1.0f, planarAnimRate * Time.deltaTime);
 			} 
@@ -529,19 +653,27 @@ public class ProxyRobotControl : Weapon {
 	void AssistedThrust(){
 		//normal move
 		chargeSpeed = 0.0f;
-
-		if(targetControl.preventPlayerAdvance){
+		aimDir = (aimTarget.position-Vector3.up*mosquitoHeight - myTransform.position).normalized;
+		Debug.DrawRay(myTransform.position, 10.0f*aimDir, new Color (0.0f, 1.0f, 1.0f));//blue+green
+		if(Vector3.Distance(myTransform.position, aimTarget.position) <= closeRange){
 			if(forthSpeed > 0)
 				forthSpeed = 0f;
-			thrustVec = sideSpeed*camTransform.right + forthSpeed * camTransform.forward;
+			
+			thrustVec = sideSpeed*myTransform.right + forthSpeed * aimDir;
 
 			vertSpeed = Vector3.Project(thrustVec, Vector3.up).y;
 			thrustVec = Vector3.ProjectOnPlane(thrustVec, Vector3.up);
-			planarMovement = thrustVec;
+			//planarMovement = thrustVec;
+
+			Vector3 forthComponent = Vector3.Project(planarMovement, myTransform.forward);
+			if(Vector3.Angle(myTransform.forward, forthComponent) == 0f)
+				forthComponent = Vector3.zero;
+			planarMovement = Vector3.Project(planarMovement, myTransform.right) + forthComponent;
+			planarMovement = Vector3.Lerp(planarMovement, thrustVec, frictionAcel * Time.deltaTime);
 		}
 		else{
 			//move
-			thrustVec = sideSpeed*camTransform.right + forthSpeed * camTransform.forward;
+			thrustVec = sideSpeed*myTransform.right + forthSpeed * aimDir;
 
 			//if no input, deacelerate
 			if (thrustVec.magnitude == 0f){
@@ -583,6 +715,20 @@ public class ProxyRobotControl : Weapon {
 			planarMovement = Vector3.Lerp (planarMovement, thrustVec, inertiaFactor * Time.deltaTime);
 		}
 	}
+	void AttackMovement(){
+		attackSpeed = Mathf.Lerp(attackSpeed, desiredAttackSpeed, attackAcel*Time.deltaTime);
+		if(aimAssist){
+			if(Vector3.Distance(myTransform.position, aimTarget.position) <= closeRange)
+				attackSpeed = 0f;
+
+			planarMovement = attackSpeed*(aimTarget.position - Vector3.up*mosquitoHeight - myTransform.position).normalized;
+		}
+		else{			
+			planarMovement = attackSpeed*myTransform.forward;
+		}
+
+	}
+
 	void Movement(){
 		myAnim.SetFloat("forth", forthAnim);
 		movement = (vertSpeed*Vector3.up + planarMovement)*Time.deltaTime;
@@ -590,15 +736,16 @@ public class ProxyRobotControl : Weapon {
 	}
 
 	void OnTriggerEnter(Collider other){
-		/*
+		
 		//collision check done in ThreatWeapon
 		if(other.tag == "EnemyWeapon"){
 			Mutation enemyMutation = other.GetComponentInParent<Mutation>();
+			Transform fatherThreat = enemyMutation.transform;
 			if(enemyMutation.lethal){
-				Damage( enemyMutation.attackPower );
+				enemyMutation.attackConnected = true;
+				Damage(enemyMutation.threatPower, enemyMutation.myKnockDownHit, Vector3.ProjectOnPlane(fatherThreat.forward,Vector3.up));
 			}
 		}
-		*/
 
 		//Debug.Log("<color=blue>"+gameObject.name + " triger enter with "+other.name+"</color>");
 	}
